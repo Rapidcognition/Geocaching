@@ -26,8 +26,8 @@ namespace Geocaching
     public class AppDbContext : DbContext
     {
         public DbSet<Person> Person { get; set; }
-        public DbSet<Geocache> Geocaches { get; set; }
-        public DbSet<FoundGeocache> FoundGeocaches { get; set; }
+        public DbSet<Geocache> Geocache { get; set; }
+        public DbSet<FoundGeocache> FoundGeocache { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
@@ -156,6 +156,19 @@ namespace Geocaching
                 }
             };
 
+            // Sätt ut pinnarna som finns i databasen.
+            foreach (Person p in database.Person)
+            {
+                Location location = new Location { Longitude = p.Longitude, Latitude = p.Latitude };
+                var pin = AddPin(location, "Person", Colors.Blue);
+            }
+
+            foreach (Geocache g in database.Geocache)
+            {
+                Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
+                var pin = AddPin(location, "Geocache", Colors.Gray);
+            }
+
             map.ContextMenu = new ContextMenu();
 
             var addPersonMenuItem = new MenuItem { Header = "Add Person" };
@@ -211,7 +224,9 @@ namespace Geocaching
             Geocache geocache = new Geocache
             {
                 Content = contents,
-                Message = message
+                Message = message,
+                Longitude = latestClickLocation.Longitude,
+                Latitude = latestClickLocation.Latitude
             };
             database.Add(geocache);
             database.SaveChanges();
@@ -257,6 +272,8 @@ namespace Geocaching
                 Country = country,
                 StreetName = streetName,
                 StreetNumber = streetNumber,
+                Longitude = latestClickLocation.Longitude,
+                Latitude = latestClickLocation.Latitude
             };
             database.Add(person);
             database.SaveChanges();

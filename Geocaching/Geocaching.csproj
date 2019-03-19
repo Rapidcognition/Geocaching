@@ -169,6 +169,10 @@
     <Compile Include="Migrations\20190319120721_LongLatChange.designer.cs">
       <DependentUpon>20190319120721_LongLatChange.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\20190319131948_Spellingerror.cs" />
+    <Compile Include="Migrations\20190319131948_Spellingerror.designer.cs">
+      <DependentUpon>20190319131948_Spellingerror.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\AppDbContextModelSnapshot.cs" />
     <Compile Include="PersonDialog.xaml.cs">
       <DependentUpon>PersonDialog.xaml</DependentUpon>
