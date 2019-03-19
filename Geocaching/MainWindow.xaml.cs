@@ -26,8 +26,8 @@ namespace Geocaching
     public class AppDbContext : DbContext
     {
         public DbSet<Person> Person { get; set; }
-        public DbSet<Geocache> Geocaches { get; set; }
-        public DbSet<FoundGeocache> FoundGeocaches { get; set; }
+        public DbSet<Geocache> Geocache { get; set; }
+        public DbSet<FoundGeocache> FoundGeocache { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
@@ -140,6 +140,7 @@ namespace Geocaching
 
             CreateMap();
         }
+        }
 
         private void CreateMap()
         {
@@ -160,6 +161,19 @@ namespace Geocaching
                 }
             };
 
+            // Sätt ut pinnarna som finns i databasen.
+            foreach (Person p in database.Person)
+            {
+                Location location = new Location { Longitude = p.Longitude, Latitude = p.Latitude };
+                var pin = AddPin(location, p.FirstName + " " + p.LastName, Colors.Blue);
+            }
+
+            foreach (Geocache g in database.Geocache)
+            {
+                Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
+                var pin = AddPin(location, g.Content, Colors.Gray);
+            }
+
             map.ContextMenu = new ContextMenu();
 
             var addPersonMenuItem = new MenuItem { Header = "Add Person" };
@@ -169,6 +183,9 @@ namespace Geocaching
             var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
             map.ContextMenu.Items.Add(addGeocacheMenuItem);
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
+
+            var hejMenuItem = new MenuItem { Header = "Hej" };
+            map.ContextMenu.Items.Add(hejMenuItem);
         }
 
         private void UpdateMap()
@@ -207,6 +224,17 @@ namespace Geocaching
                 // Prevent click from being triggered on map.
                 a.Handled = true;
             };
+
+            // Add to database
+            Geocache geocache = new Geocache
+            {
+                Content = contents,
+                Message = message,
+                Longitude = latestClickLocation.Longitude,
+                Latitude = latestClickLocation.Latitude
+            };
+            database.Add(geocache);
+            database.SaveChanges();
         }
 
         private void OnAddPersonClick(object sender, RoutedEventArgs args)
@@ -219,12 +247,10 @@ namespace Geocaching
                 return;
             }
 
-            string FirstName = dialog.PersonFirstName;
-            string LastName = dialog.PersonLastName;
             string city = dialog.AddressCity;
             string country = dialog.AddressCountry;
             string streetName = dialog.AddressStreetName;
-            byte streetNumber = dialog.AddressStreetNumber;
+            int streetNumber = dialog.AddressStreetNumber;
             // Add person to map and database here.
             var pin = AddPin(latestClickLocation, "Person", Colors.Blue);
 
@@ -249,6 +275,28 @@ namespace Geocaching
                 // Prevent click from being triggered on map.
                 a.Handled = true;
             };
+
+            string firstName = dialog.PersonFirstName;
+            string lastName = dialog.PersonLastName;
+            string city = dialog.AddressCity;
+            string country = dialog.AddressCountry;
+            string streetName = dialog.AddressStreetName;
+            byte streetNumber = dialog.AddressStreetNumber;
+
+            // Add to database
+            Person person = new Person
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                City = city,
+                Country = country,
+                StreetName = streetName,
+                StreetNumber = streetNumber,
+                Longitude = latestClickLocation.Longitude,
+                Latitude = latestClickLocation.Latitude
+            };
+            database.Add(person);
+            database.SaveChanges();
         }
 
         private Pushpin AddPin(Location location, string tooltip, Color color)
