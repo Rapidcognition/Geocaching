@@ -140,7 +140,6 @@ namespace Geocaching
 
             CreateMap();
         }
-        }
 
         private void CreateMap()
         {
@@ -247,24 +246,8 @@ namespace Geocaching
                 return;
             }
 
-            string city = dialog.AddressCity;
-            string country = dialog.AddressCountry;
-            string streetName = dialog.AddressStreetName;
-            int streetNumber = dialog.AddressStreetNumber;
             // Add person to map and database here.
             var pin = AddPin(latestClickLocation, "Person", Colors.Blue);
-
-            //Person person = new Person
-            //{
-            //    FirstName = FirstName,
-            //    LastName = LastName,
-            //    City = city,
-            //    Country = country,
-            //    StreetName = streetName,
-            //    StreetNumber = streetNumber,
-            //};
-            //database.Add(person);
-            //database.SaveChanges();
 
             pin.MouseDown += (s, a) =>
             {
@@ -449,7 +432,7 @@ namespace Geocaching
                         person.Country + " | " + person.City + " | " + person.StreetName + " | " +
                         person.StreetNumber + " | " + person.Longitude + " | " + person.Latitude;
                     lines.Add(stringBuilder);
-                    Geocache[] geocaches = database.Geocaches.Where(g => g.PersonId == person.PersonId).ToArray();
+                    Geocache[] geocaches = database.Geocache.Where(g => g.PersonId == person.PersonId).ToArray();
                     foreach (var item in geocaches)
                     {
                         stringBuilder = null;
@@ -457,7 +440,7 @@ namespace Geocaching
                             item.Latitude + " | " + item.Content + " | " + item.Message;
                         lines.Add(stringBuilder);
                     }
-                    FoundGeocache[] foundcaches = database.FoundGeocaches.Where(f => f.PersonId == person.PersonId).ToArray();
+                    FoundGeocache[] foundcaches = database.FoundGeocache.Where(f => f.PersonId == person.PersonId).ToArray();
                     stringBuilder = "Found: ";
                     foreach (var item in foundcaches)
                     {
