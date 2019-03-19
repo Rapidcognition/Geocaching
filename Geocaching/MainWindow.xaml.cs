@@ -31,7 +31,7 @@ namespace Geocaching
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS01;Initial Catalog=Geocaching;Integrated Security=True");
+            options.UseSqlServer(@"Data Source=5CD8222QVX\SQLEXPRESS;Initial Catalog=Geocaching;Integrated Security=True");
         }
 
         protected override void OnModelCreating(ModelBuilder model)
@@ -83,7 +83,8 @@ namespace Geocaching
         [Column(TypeName = "varchar(255)")]
         public string Message { get; set; }
 
-        public int PersonId { get; set; }
+        
+        public int? PersonId { get; set; }
         public Person Person { get; set; }
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
     }
