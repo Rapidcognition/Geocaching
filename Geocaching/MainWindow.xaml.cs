@@ -208,17 +208,6 @@ namespace Geocaching
             string contents = dialog.GeocacheContents;
             string message = dialog.GeocacheMessage;
             // Add geocache to map and database here.
-            var pin = AddPin(latestClickLocation, "Person", Colors.Gray);
-
-            pin.MouseDown += (s, a) =>
-            {
-                // Handle click on geocache pin here.
-                MessageBox.Show("You clicked a geocache");
-                UpdateMap();
-
-                // Prevent click from being triggered on map.
-                a.Handled = true;
-            };
 
             // Add to database
             Geocache geocache = new Geocache
@@ -230,6 +219,18 @@ namespace Geocaching
             };
             database.Add(geocache);
             database.SaveChanges();
+
+            var pin = AddPin(latestClickLocation, geocache.Content, Colors.Gray);
+
+            pin.MouseDown += (s, a) =>
+            {
+                // Handle click on geocache pin here.
+                MessageBox.Show("You clicked a geocache");
+                UpdateMap();
+
+                // Prevent click from being triggered on map.
+                a.Handled = true;
+            };
         }
 
         private void OnAddPersonClick(object sender, RoutedEventArgs args)
@@ -241,20 +242,6 @@ namespace Geocaching
             {
                 return;
             }
-
-
-            // Add person to map and database here.
-            var pin = AddPin(latestClickLocation, "Person", Colors.Blue);
-
-            pin.MouseDown += (s, a) =>
-            {
-                // Handle click on person pin here.
-                MessageBox.Show("You clicked a person");
-                UpdateMap();
-
-                // Prevent click from being triggered on map.
-                a.Handled = true;
-            };
 
             string firstName = dialog.PersonFirstName;
             string lastName = dialog.PersonLastName;
@@ -277,6 +264,19 @@ namespace Geocaching
             };
             database.Add(person);
             database.SaveChanges();
+
+            // Add person to map and database here.
+            var pin = AddPin(latestClickLocation, person.FirstName + " " + person.LastName, Colors.Blue);
+
+            pin.MouseDown += (s, a) =>
+            {
+                // Handle click on person pin here.
+                MessageBox.Show("You clicked a person");
+                UpdateMap();
+
+                // Prevent click from being triggered on map.
+                a.Handled = true;
+            };
         }
 
         private Pushpin AddPin(Location location, string tooltip, Color color)
