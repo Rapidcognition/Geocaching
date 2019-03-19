@@ -299,12 +299,14 @@ namespace Geocaching
 
 
 
-            string[] lines = File.ReadAllLines(path).Skip(1).ToArray();
-            foreach (string line in lines)
+            string[] lines = new string[database.Person.Count()];
+
+            Person[] people = database.Person.Select(p => p).ToArray();
+            foreach (Person person in people)
             {
                 try
                 {
-                    string[] values = line.Split('|').Select(v => v.Trim()).ToArray();
+
                 }
                 catch
                 {
