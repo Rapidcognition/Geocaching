@@ -41,12 +41,12 @@ namespace Geocaching
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Person)
-                .WithMany(p => p.foundGeocaches)
+                .WithMany(p => p.FoundGeocaches)
                 .HasForeignKey(fg => fg.PersonId);
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Geocache)
-                .WithMany(g => g.foundGeocaches)
+                .WithMany(g => g.FoundGeocaches)
                 .HasForeignKey(fg => fg.GeocacheId);
         }
     }
@@ -69,7 +69,7 @@ namespace Geocaching
         public string StreetName { get; set; }
         public byte StreetNumber { get; set; }
 
-        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+        public ICollection<FoundGeocache> FoundGeocaches { get; set; }
     }
 
     public class Geocache
@@ -85,7 +85,7 @@ namespace Geocaching
 
         public int PersonId { get; set; }
         public Person Person { get; set; }
-        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+        public ICollection<FoundGeocache> FoundGeocaches { get; set; }
     }
 
     public class FoundGeocache
