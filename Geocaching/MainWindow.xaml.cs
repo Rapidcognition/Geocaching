@@ -37,12 +37,12 @@ namespace Geocaching
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Person)
-                .WithMany(p => p.foundGeocaches)
+                .WithMany(p => p.FoundGeocaches)
                 .HasForeignKey(fg => fg.PersonId);
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Geocache)
-                .WithMany(g => g.foundGeocaches)
+                .WithMany(g => g.FoundGeocaches)
                 .HasForeignKey(fg => fg.GeocacheId);
         }
     }
@@ -65,7 +65,7 @@ namespace Geocaching
         public string StreetName { get; set; }
         public byte StreetNumber { get; set; }
 
-        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+        public ICollection<FoundGeocache> FoundGeocaches { get; set; }
     }
 
     public class Geocache
@@ -79,9 +79,9 @@ namespace Geocaching
         [Column(TypeName = "varchar(255)")]
         public string Message { get; set; }
 
-        public int PersonId { get; set; }
+        public int? PersonId { get; set; }
         public Person Person { get; set; }
-        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+        public ICollection<FoundGeocache> FoundGeocaches { get; set; }
     }
 
     public class FoundGeocache
@@ -112,6 +112,8 @@ namespace Geocaching
 
         private Location gothenburg = new Location(57.719021, 11.991202);
 
+        private AppDbContext database;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -132,6 +134,7 @@ namespace Geocaching
 
             using (var db = new AppDbContext())
             {
+                database = db;
                 // Load data from database and populate map here.
             }
         }
@@ -243,6 +246,7 @@ namespace Geocaching
             return pin;
         }
 
+        // Spara allt i textfilen till databasen.
         private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
@@ -258,6 +262,8 @@ namespace Geocaching
             // Read the selected file here.
         }
 
+
+        // Hämta allt från databasen och spara i textfilen.
         private void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.SaveFileDialog();
@@ -272,6 +278,21 @@ namespace Geocaching
 
             string path = dialog.FileName;
             // Write to the selected file here.
+
+
+
+            string[] lines = File.ReadAllLines(path).Skip(1).ToArray();
+            foreach (string line in lines)
+            {
+                try
+                {
+                    string[] values = line.Split('|').Select(v => v.Trim()).ToArray();
+                }
+                catch
+                {
+
+                }
+            }
         }
     }
 }
