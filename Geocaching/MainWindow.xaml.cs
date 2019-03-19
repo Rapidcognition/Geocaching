@@ -160,13 +160,13 @@ namespace Geocaching
             foreach (Person p in database.Person)
             {
                 Location location = new Location { Longitude = p.Longitude, Latitude = p.Latitude };
-                var pin = AddPin(location, "Person", Colors.Blue);
+                var pin = AddPin(location, p.FirstName + " " + p.LastName, Colors.Blue);
             }
 
             foreach (Geocache g in database.Geocache)
             {
                 Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
-                var pin = AddPin(location, "Geocache", Colors.Gray);
+                var pin = AddPin(location, g.Content, Colors.Gray);
             }
 
             map.ContextMenu = new ContextMenu();
