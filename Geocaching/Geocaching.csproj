@@ -165,9 +165,13 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Migrations\20190319104337_First.cs" />
-    <Compile Include="Migrations\20190319104337_First.designer.cs">
-      <DependentUpon>20190319104337_First.cs</DependentUpon>
+    <Compile Include="Migrations\20190319120721_LongLatChange.cs" />
+    <Compile Include="Migrations\20190319120721_LongLatChange.designer.cs">
+      <DependentUpon>20190319120721_LongLatChange.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190319131948_Spellingerror.cs" />
+    <Compile Include="Migrations\20190319131948_Spellingerror.designer.cs">
+      <DependentUpon>20190319131948_Spellingerror.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\20190319105211_Fourth.cs" />
     <Compile Include="Migrations\20190319105211_Fourth.designer.cs">
@@ -218,6 +222,7 @@
   <ItemGroup>
     <Resource Include="Geocaches.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
