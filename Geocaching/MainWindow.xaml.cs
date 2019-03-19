@@ -22,12 +22,75 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Geocaching
 {
-    class AppDbContext : DbContext
+
+    public class AppDbContext : DbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS01;Initial Catalog=Geocaching;Integrated Security=True");
         }
+
+        protected override void OnModelCreating(ModelBuilder model)
+        {
+            model.Entity<FoundGeocache>()
+                .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
+
+            model.Entity<FoundGeocache>()
+                .HasOne(fg => fg.Person)
+                .WithMany(p => p.foundGeocaches)
+                .HasForeignKey(fg => fg.PersonId);
+
+            model.Entity<FoundGeocache>()
+                .HasOne(fg => fg.Geocache)
+                .WithMany(g => g.foundGeocaches)
+                .HasForeignKey(fg => fg.GeocacheId);
+        }
+    }
+
+    public class Person
+    {
+        public int PersonId { get; set; }
+
+        [Column(TypeName = "varchar(50)")]
+        public string FirstName { get; set; }
+        [Column(TypeName = "varchar(50)")]
+        public string LastName { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        [Column(TypeName = "varchar(50)")]
+        public string Country { get; set; }
+        [Column(TypeName = "varchar(50)")]
+        public string City { get; set; }
+        [Column(TypeName = "varchar(50)")]
+        public string StreetName { get; set; }
+        public byte StreetNumber { get; set; }
+
+        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+    }
+
+    public class Geocache
+    {
+        public int GeocacheId { get; set; }
+
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        [Column(TypeName = "varchar(255)")]
+        public string Content { get; set; }
+        [Column(TypeName = "varchar(255)")]
+        public string Message { get; set; }
+
+        public int PersonId { get; set; }
+        public Person Person { get; set; }
+        public ICollection<FoundGeocache> foundGeocaches { get; set; }
+    }
+
+    public class FoundGeocache
+    {
+        public int PersonId { get; set; }
+        public Person Person { get; set; }
+
+        public int GeocacheId { get; set; }
+        public Geocache Geocache { get; set; }
     }
 
     /// <summary>
