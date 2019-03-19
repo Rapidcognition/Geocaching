@@ -25,6 +25,10 @@ namespace Geocaching
 
     public class AppDbContext : DbContext
     {
+        public DbSet<Person> Person { get; set; }
+        public DbSet<Geocache> Geocaches { get; set; }
+        public DbSet<FoundGeocache> FoundGeocaches { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS01;Initial Catalog=Geocaching;Integrated Security=True");
