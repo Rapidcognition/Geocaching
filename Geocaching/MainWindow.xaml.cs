@@ -31,7 +31,7 @@ namespace Geocaching
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS01;Initial Catalog=Geocaching;Integrated Security=True");
+            options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS;Initial Catalog=Geocaching;Integrated Security=True");
         }
 
         protected override void OnModelCreating(ModelBuilder model)
@@ -285,12 +285,14 @@ namespace Geocaching
 
 
 
-            string[] lines = File.ReadAllLines(path).Skip(1).ToArray();
-            foreach (string line in lines)
+            string[] lines = new string[database.Person.Count()];
+
+            Person[] people = database.Person.Select(p => p).ToArray();
+            foreach (Person person in people)
             {
                 try
                 {
-                    string[] values = line.Split('|').Select(v => v.Trim()).ToArray();
+
                 }
                 catch
                 {

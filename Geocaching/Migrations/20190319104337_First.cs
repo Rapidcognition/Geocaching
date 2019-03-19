@@ -28,7 +28,7 @@ namespace Geocaching.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Geocache",
+                name: "Geocaches",
                 columns: table => new
                 {
                     GeocacheId = table.Column<int>(nullable: false)
@@ -37,21 +37,21 @@ namespace Geocaching.Migrations
                     Longitude = table.Column<double>(nullable: false),
                     Content = table.Column<string>(type: "varchar(255)", nullable: true),
                     Message = table.Column<string>(type: "varchar(255)", nullable: true),
-                    PersonId = table.Column<int>(nullable: false)
+                    PersonId = table.Column<int>(nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Geocache", x => x.GeocacheId);
+                    table.PrimaryKey("PK_Geocaches", x => x.GeocacheId);
                     table.ForeignKey(
-                        name: "FK_Geocache_Person_PersonId",
+                        name: "FK_Geocaches_Person_PersonId",
                         column: x => x.PersonId,
                         principalTable: "Person",
                         principalColumn: "PersonId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "FoundGeocache",
+                name: "FoundGeocaches",
                 columns: table => new
                 {
                     PersonId = table.Column<int>(nullable: false),
@@ -59,15 +59,15 @@ namespace Geocaching.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FoundGeocache", x => new { x.PersonId, x.GeocacheId });
+                    table.PrimaryKey("PK_FoundGeocaches", x => new { x.PersonId, x.GeocacheId });
                     table.ForeignKey(
-                        name: "FK_FoundGeocache_Geocache_GeocacheId",
+                        name: "FK_FoundGeocaches_Geocaches_GeocacheId",
                         column: x => x.GeocacheId,
-                        principalTable: "Geocache",
+                        principalTable: "Geocaches",
                         principalColumn: "GeocacheId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_FoundGeocache_Person_PersonId",
+                        name: "FK_FoundGeocaches_Person_PersonId",
                         column: x => x.PersonId,
                         principalTable: "Person",
                         principalColumn: "PersonId",
@@ -75,23 +75,23 @@ namespace Geocaching.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_FoundGeocache_GeocacheId",
-                table: "FoundGeocache",
+                name: "IX_FoundGeocaches_GeocacheId",
+                table: "FoundGeocaches",
                 column: "GeocacheId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Geocache_PersonId",
-                table: "Geocache",
+                name: "IX_Geocaches_PersonId",
+                table: "Geocaches",
                 column: "PersonId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "FoundGeocache");
+                name: "FoundGeocaches");
 
             migrationBuilder.DropTable(
-                name: "Geocache");
+                name: "Geocaches");
 
             migrationBuilder.DropTable(
                 name: "Person");
