@@ -165,10 +165,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Migrations\20190319115945_First.cs" />
-    <Compile Include="Migrations\20190319115945_First.designer.cs">
-      <DependentUpon>20190319115945_First.cs</DependentUpon>
-    </Compile>
     <Compile Include="Migrations\20190319120721_LongLatChange.cs" />
     <Compile Include="Migrations\20190319120721_LongLatChange.designer.cs">
       <DependentUpon>20190319120721_LongLatChange.cs</DependentUpon>

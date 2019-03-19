@@ -206,6 +206,15 @@ namespace Geocaching
                 // Prevent click from being triggered on map.
                 a.Handled = true;
             };
+
+            // Add to database
+            Geocache geocache = new Geocache
+            {
+                Content = contents,
+                Message = message
+            };
+            database.Add(geocache);
+            database.SaveChanges();
         }
 
         private void OnAddPersonClick(object sender, RoutedEventArgs args)
