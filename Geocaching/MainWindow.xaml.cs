@@ -31,7 +31,7 @@ namespace Geocaching
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS01;Initial Catalog=Geocaching;Integrated Security=True");
+            options.UseSqlServer(@"Data Source=(local)\SQLEXPRESS;Initial Catalog=Geocaching;Integrated Security=True");
         }
 
         protected override void OnModelCreating(ModelBuilder model)
@@ -116,7 +116,7 @@ namespace Geocaching
 
         private Location gothenburg = new Location(57.719021, 11.991202);
 
-        private AppDbContext database;
+        private AppDbContext database = new AppDbContext();
 
         public MainWindow()
         {
@@ -135,12 +135,6 @@ namespace Geocaching
             //}
 
             CreateMap();
-
-            using (var db = new AppDbContext())
-            {
-                database = db;
-                // Load data from database and populate map here.
-            }
         }
 
         private void CreateMap()
@@ -171,6 +165,9 @@ namespace Geocaching
             var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
             map.ContextMenu.Items.Add(addGeocacheMenuItem);
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
+
+            var hejMenuItem = new MenuItem { Header = "Hej" };
+            map.ContextMenu.Items.Add(hejMenuItem);
         }
 
         private void UpdateMap()
@@ -221,10 +218,7 @@ namespace Geocaching
                 return;
             }
 
-            string city = dialog.AddressCity;
-            string country = dialog.AddressCountry;
-            string streetName = dialog.AddressStreetName;
-            int streetNumber = dialog.AddressStreetNumber;
+
             // Add person to map and database here.
             var pin = AddPin(latestClickLocation, "Person", Colors.Blue);
 
@@ -237,6 +231,26 @@ namespace Geocaching
                 // Prevent click from being triggered on map.
                 a.Handled = true;
             };
+
+            string firstName = dialog.PersonFirstName;
+            string lastName = dialog.PersonLastName;
+            string city = dialog.AddressCity;
+            string country = dialog.AddressCountry;
+            string streetName = dialog.AddressStreetName;
+            byte streetNumber = dialog.AddressStreetNumber;
+
+            // Add to database
+            Person person = new Person
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                City = city,
+                Country = country,
+                StreetName = streetName,
+                StreetNumber = streetNumber,
+            };
+            database.Add(person);
+            database.SaveChanges();
         }
 
         private Pushpin AddPin(Location location, string tooltip, Color color)
