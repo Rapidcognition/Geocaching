@@ -53,6 +53,7 @@ namespace Geocaching
 
     public class Person
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PersonId { get; set; }
 
         [Column(TypeName = "varchar(50)")]
@@ -74,6 +75,7 @@ namespace Geocaching
 
     public class Geocache
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int GeocacheId { get; set; }
 
         public double Latitude { get; set; }
@@ -90,9 +92,11 @@ namespace Geocaching
 
     public class FoundGeocache
     {
+        [ForeignKey("PersonId")]
         public int PersonId { get; set; }
         public Person Person { get; set; }
 
+        [ForeignKey("GeocacheId")]
         public int GeocacheId { get; set; }
         public Geocache Geocache { get; set; }
     }
@@ -325,7 +329,7 @@ namespace Geocaching
             pin.Opacity = opacity;
             ToolTipService.SetToolTip(pin, tooltip);
             ToolTipService.SetInitialShowDelay(pin, 0);
-            layer.AddChild(pin, location);
+            layer.AddChild(pin, new Location(location.Latitude, location.Longitude));
             return pin;
         }
 
@@ -343,6 +347,99 @@ namespace Geocaching
 
             string path = dialog.FileName;
             // Read the selected file here.
+
+            string[] lines = File.ReadAllLines(path).ToArray();
+            List<Person> people = new List<Person>();
+            List<Geocache> geocaches = new List<Geocache>();
+            Geocache geocache;
+            List<FoundGeocache> found = new List<FoundGeocache>();
+            FoundGeocache foundcache;
+            Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
+
+
+            List<List<string>> collection = new List<List<string>>();
+            List<string> liness = new List<string>();
+            foreach (var line in lines)
+            {
+                if(line != "")
+                {
+                    liness.Add(line);
+                    continue;
+                }
+                else
+                {
+                    collection.Add(liness);
+                    liness = new List<string>();
+                }
+            }
+            collection.Add(liness);
+
+            Person p;
+            for (int i = 0; i < collection.Count(); i++)
+            {
+                string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
+                p = new Person
+                {
+                    FirstName = values[0],
+                    LastName = values[1],
+                    Country = values[2],
+                    City = values[3],
+                    StreetName = values[4],
+                    StreetNumber = byte.Parse(values[5]),
+                    Longitude = double.Parse(values[6]),
+                    Latitude = double.Parse(values[7]),
+                };
+                people.Add(p);
+                for (int k = 1; k < collection[i].Count(); k++)
+                {
+                    try
+                    {
+                        string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
+                        geocache = new Geocache
+                        {
+                            Longitude = double.Parse(tmp[1]),
+                            Latitude = double.Parse(tmp[2]),
+                            Content = tmp[3],
+                            Message = tmp[4],
+                            Person = p,
+                        };
+                        geocaches.Add(geocache);
+                    }
+                    catch(Exception e)
+                    {
+                        // Insert cheat here
+                        string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+                        pairs.Add(numbers, p);
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<string[], Person> item in pairs)
+            {
+                string[] tmp = item.Key.Select(t => t).ToArray();
+
+                foreach (var t in tmp)
+                {
+                    foundcache = new FoundGeocache
+                    {
+                        Person = item.Value,
+                        Geocache = geocaches[(int.Parse(t) - 1)],
+                    };
+                    found.Add(foundcache);
+                    database.Add(foundcache);
+                }
+            }
+
+            foreach (Person person in people)
+            {
+                database.Add(person);
+            }
+            foreach (Geocache cache in geocaches)
+            {
+                database.Add(cache);
+            }
+
+            database.SaveChanges();
         }
 
 
@@ -363,20 +460,41 @@ namespace Geocaching
             // Write to the selected file here.
 
 
-
-            string[] lines = new string[database.Person.Count()];
+            List<string> lines = new List<string>();
 
             Person[] people = database.Person.Select(p => p).ToArray();
             foreach (Person person in people)
             {
+                string stringBuilder = null;
                 try
                 {
-
+                    stringBuilder += person.FirstName + " | " + person.LastName + " | " +
+                        person.Country + " | " + person.City + " | " + person.StreetName + " | " +
+                        person.StreetNumber + " | " + person.Longitude + " | " + person.Latitude;
+                    lines.Add(stringBuilder);
+                    Geocache[] geocaches = database.Geocache.Where(g => g.PersonId == person.PersonId).ToArray();
+                    foreach (var item in geocaches)
+                    {
+                        stringBuilder = null;
+                        stringBuilder += item.GeocacheId + " | " + item.Longitude + " | " +
+                            item.Latitude + " | " + item.Content + " | " + item.Message;
+                        lines.Add(stringBuilder);
+                    }
+                    FoundGeocache[] foundcaches = database.FoundGeocache.Where(f => f.PersonId == person.PersonId).ToArray();
+                    stringBuilder = "Found: ";
+                    foreach (var item in foundcaches)
+                    {
+                        stringBuilder += item.GeocacheId + ", ";
+                    }
+                    stringBuilder = stringBuilder.Remove(stringBuilder.Length);
+                    lines.Add(stringBuilder);
+                    lines.Add(Environment.NewLine);
                 }
                 catch
                 {
 
                 }
+                lines.RemoveRange(lines.Count() - 1, lines.Count());
             }
         }
     }

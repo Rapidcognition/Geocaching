@@ -173,6 +173,22 @@
     <Compile Include="Migrations\20190319131948_Spellingerror.designer.cs">
       <DependentUpon>20190319131948_Spellingerror.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\20190319105211_Fourth.cs" />
+    <Compile Include="Migrations\20190319105211_Fourth.designer.cs">
+      <DependentUpon>20190319105211_Fourth.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190319140542_Fifth.cs" />
+    <Compile Include="Migrations\20190319140542_Fifth.designer.cs">
+      <DependentUpon>20190319140542_Fifth.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190319142936_Sixth.cs" />
+    <Compile Include="Migrations\20190319142936_Sixth.designer.cs">
+      <DependentUpon>20190319142936_Sixth.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190319143124_Seventh.cs" />
+    <Compile Include="Migrations\20190319143124_Seventh.designer.cs">
+      <DependentUpon>20190319143124_Seventh.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\AppDbContextModelSnapshot.cs" />
     <Compile Include="PersonDialog.xaml.cs">
       <DependentUpon>PersonDialog.xaml</DependentUpon>
