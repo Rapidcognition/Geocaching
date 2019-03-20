@@ -148,16 +148,18 @@ namespace Geocaching
 
         // Contains the location of the latest click on the map.
         // The Location object in turn contains information like longitude and latitude.
-        private Location latestClickLocation;
 
         private Person currentPerson = null;
 
         private Location gothenburg = new Location(57.719021, 11.991202);
 
+        private Location latestClickLocation;
+
         private AppDbContext database = new AppDbContext();
 
         public MainWindow()
         {
+            latestClickLocation = gothenburg;
             InitializeComponent();
             Start();
         }
@@ -212,106 +214,80 @@ namespace Geocaching
 
         private void UpdateMap()
         {
-            if (database.Geocache.Where(g => g.Longitude == latestClickLocation.Longitude && g.Latitude == latestClickLocation.Latitude) == null)
+            // Put all the pins on the map and make clickevents on them. 
+            currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
+
+            foreach (Person person in database.Person)
             {
-                currentPerson = null;
-            }
-            else
-            {
-                foreach (Person person in database.Person)
+                Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
+                var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1);
+
+                pin.MouseDown += (s, a) =>
                 {
-                    Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
-                    var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1);
+                    currentPerson = person;
+                    UpdatePin(pin, Colors.Blue, 1);
 
-                    pin.MouseDown += (s, a) =>
+                    foreach (Pushpin p in layer.Children)
                     {
-                        currentPerson = person;
-                        UpdatePin(pin, Colors.Blue, 1);
-
-                        foreach (Pushpin p in layer.Children)
+                        Geocache geocache = database.Geocache.FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+                        FoundGeocache foundGeocache = null;
+                        if (geocache != null)
                         {
-                            Geocache geocache = database.Geocache.FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
-                            FoundGeocache foundGeocache = null;
-                            if (geocache != null)
-                            {
-                                foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
-                            }
-
-                            // If the pushpin represents a person, dabble with opacity
-                            if (geocache == null && p.ToolTip.ToString() != person.FirstName + " " + person.LastName)
-                            {
-                                UpdatePin(p, Colors.Blue, 0.5);
-                            }
-                            // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
-                            else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
-                            {
-                                UpdatePin(p, Colors.Black, 1);
-                            }
-                            // A Geocache found by the current person. Should have clickevent.
-                            else if (geocache != null && foundGeocache != null)
-                            {
-                                UpdatePin(p, Colors.Green, 1);
-                                p.MouseDown += (t, b) =>
-                                {
-                                    UpdatePin(p, Colors.Red, 1);
-                                    // Update database to not picked geocache
-                                    database.Remove(foundGeocache);
-                                    database.SaveChanges();
-                                    b.Handled = true;
-                                };
-                            }
-                            // A geocache not found by the current person. Change color, clickevent too.
-                            else if (geocache != null && foundGeocache == null)
-                            {
-                                UpdatePin(p, Colors.Red, 1);
-                                p.MouseDown += (t, b) =>
-                                {
-                                    UpdatePin(p, Colors.Green, 1);
-                                    // Update database to picked geocache
-                                    FoundGeocache newFoundGeocache = new FoundGeocache
-                                    {
-                                        Person = person,
-                                        Geocache = geocache
-                                    };
-                                    database.Add(newFoundGeocache);
-                                    database.SaveChanges();
-                                    b.Handled = true;
-                                };
-                            }
+                            foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
                         }
 
-                        // Handle click on person pin here.
-                        // Prevent click from being triggered on map.
-
-                        a.Handled = true;
-                    };
-                }
-
-                foreach (Geocache g in database.Geocache)
-                {
-                    Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
-                    var pin = AddPin(location, g.Content, Colors.Gray, 1);
-                    pin.MouseDown += (s, a) =>
-                    {
-                        // Handle click on geocache pin here.
-                        // If a pin is green, make it red
-                        // and also add to the database that the geocache is found. (HARDEST PART EVER?)
-                        // vice versa
-                        MessageBox.Show("You clicked a geocache");
-
-                        // Prevent click from being triggered on map.
-                        a.Handled = true;
-                    };
-                }
+                        // If the pushpin represents a person, dabble with opacity
+                        if (geocache == null && p.ToolTip.ToString() != person.FirstName + " " + person.LastName)
+                        {
+                            UpdatePin(p, Colors.Blue, 0.5);
+                        }
+                        // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
+                        else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
+                        {
+                            UpdatePin(p, Colors.Black, 1);
+                        }
+                        // A Geocache found by the current person. Should have clickevent.
+                        else if (geocache != null && foundGeocache != null)
+                        {
+                            UpdatePin(p, Colors.Green, 1);
+                            p.MouseDown += (t, b) =>
+                            {
+                                UpdatePin(p, Colors.Red, 1);
+                                // Update database to not picked geocache
+                                database.Remove(foundGeocache);
+                                database.SaveChanges();
+                                b.Handled = true;
+                            };
+                        }
+                        // A geocache not found by the current person. Change color, clickevent too.
+                        else if (geocache != null && foundGeocache == null)
+                        {
+                            UpdatePin(p, Colors.Red, 1);
+                            p.MouseDown += (t, b) =>
+                            {
+                                UpdatePin(p, Colors.Green, 1);
+                                // Update database to picked geocache
+                                FoundGeocache newFoundGeocache = new FoundGeocache
+                                {
+                                    Person = person,
+                                    Geocache = geocache
+                                };
+                                database.Add(newFoundGeocache);
+                                database.SaveChanges();
+                                b.Handled = true;
+                            };
+                        }
+                    }
+                    
+                    // Prevent click from being triggered on map.
+                    a.Handled = true;
+                };
             }
-
-            // It is recommended (but optional) to use this method for setting the color and opacity of each pin after every user interaction that might change something.
-            // This method should then be called once after every significant action, such as clicking on a pin, clicking on the map, or clicking a context menu option.
         }
 
         private void OnMapLeftClick()
         {
-            // Handle map click here.
+            currentPerson = null;
             UpdateMap();
         }
 
