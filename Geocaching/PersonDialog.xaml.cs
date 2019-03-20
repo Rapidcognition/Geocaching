@@ -12,6 +12,12 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
+// Att göra: När man klickar på add geocache och ingen person är vald ska felmeddelande dyka upp. Annars ska geocachen ha den personen som person.
+
+
+
+
+
 namespace Geocaching
 {
     /// <summary>
