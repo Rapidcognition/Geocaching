@@ -101,15 +101,11 @@ namespace Geocaching
         public Geocache Geocache { get; set; }
     }
 
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         // Contains the ID string needed to use the Bing map.
         // Instructions here: https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key
 
-        //private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
         private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
 
         private MapLayer layer;
@@ -117,6 +113,8 @@ namespace Geocaching
         // Contains the location of the latest click on the map.
         // The Location object in turn contains information like longitude and latitude.
         private Location latestClickLocation;
+
+        private Person currentPerson = null;
 
         private Location gothenburg = new Location(57.719021, 11.991202);
 
@@ -178,57 +176,38 @@ namespace Geocaching
 
         private void UpdateMap()
         {
-
-            //// If click is on a person-pin
-            //if (database.Person.Where(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude) != null)
-            //{
-            //    Person person = new Person();
-            //    var pin = AddPin(latestClickLocation, person.FirstName + " " + person.LastName, Colors.Blue, 1);
-            //    foreach (Person p in database.Person)
-            //    {
-            //        if (p != person)
-            //        {
-            //            Location location = new Location { Longitude = p.Longitude, Latitude = p.Latitude };
-            //            var pin2 = AddPin(location, p.FirstName + " " + p.LastName, Colors.Blue, 0.5);
-            //        }
-            //    }
-            //    foreach (Geocache g in database.Geocache)
-            //    {
-            //        Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
-            //        if (g.PersonId == person.PersonId)
-            //        {
-            //            var pin2 = AddPin(location, g.Content, Colors.Black, 1);
-            //        }
-            //        else if (database.FoundGeocache.Where(fg => fg.PersonId == person.PersonId && fg.GeocacheId == g.GeocacheId) != null)
-            //        {
-            //            var pin2 = AddPin(location, g.Content, Colors.Green, 1);
-            //        }
-            //        else
-            //        {
-            //            var pin2 = AddPin(location, g.Content, Colors.Red, 1);
-            //        }
-            //    }
-            //}
-            //// If click is not on pin
             if (database.Geocache.Where(g => g.Longitude == latestClickLocation.Longitude && g.Latitude == latestClickLocation.Latitude) == null)
             {
 
             }
             else
             {
-                foreach (Person p in database.Person)
+                foreach (Person person in database.Person)
                 {
-                    Location location = new Location { Longitude = p.Longitude, Latitude = p.Latitude };
-                    var pin = AddPin(location, p.FirstName + " " + p.LastName, Colors.Blue, 1);
+                    Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
+                    var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1);
 
                     pin.MouseDown += (s, a) =>
                     {
-                    // Handle click on person pin here.
-                    MessageBox.Show("You clicked a person");
-                        UpdateMap();
+                        currentPerson = person;
+                        UpdatePin(pin, Colors.Blue, 1);
 
-                    // Prevent click from being triggered on map.
-                    a.Handled = true;
+                        foreach (Pushpin p in layer.Children)
+                        {
+                            if (p.Background.ToString() == Brushes.Blue.ToString() && p.ToolTip.ToString() != person.FirstName + " " + person.LastName)
+                            {
+                                UpdatePin(p, Colors.Blue, 0.5);
+                            }
+                        }
+                        // Handle click on person pin here.
+                        // Change opacity on the other peoplepins here. But how??
+                        // Also change 
+
+                        //MessageBox.Show("You clicked a person");
+                        //UpdateMap();
+                        // Prevent click from being triggered on map.
+
+                        a.Handled = true;
                     };
                 }
 
@@ -239,6 +218,9 @@ namespace Geocaching
                     pin.MouseDown += (s, a) =>
                     {
                         // Handle click on geocache pin here.
+                        // If a pin is green, make it red
+                        // and also add to the database that the geocache is found. (HARDEST PART EVER?)
+                        // vice versa
                         MessageBox.Show("You clicked a geocache");
                         UpdateMap();
 
@@ -331,6 +313,12 @@ namespace Geocaching
             ToolTipService.SetInitialShowDelay(pin, 0);
             layer.AddChild(pin, new Location(location.Latitude, location.Longitude));
             return pin;
+        }
+
+        private void UpdatePin(Pushpin pin, Color color, double opacity)
+        {
+            pin.Background = new SolidColorBrush(color);
+            pin.Opacity = opacity;
         }
 
         // Spara allt i textfilen till databasen.
