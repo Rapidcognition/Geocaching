@@ -154,6 +154,8 @@ namespace Geocaching
 
         private Location latestClickLocation;
 
+        private bool keepPerson = false;
+
         private AppDbContext database = new AppDbContext();
 
         public MainWindow()
@@ -213,8 +215,15 @@ namespace Geocaching
 
         private void UpdateMap()
         {
-            // Put all the pins on the map and make clickevents on them. 
-            currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
+            // Put all the pins on the map and make click events on them. 
+            if (currentPerson == null)
+            {
+                foreach (Geocache g in database.Geocache)
+                {
+                    Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
+                    var pin = AddPin(location, g.Content, Colors.Gray, 1);
+                }
+            }
 
             foreach (Person person in database.Person)
             {
@@ -230,6 +239,7 @@ namespace Geocaching
                     {
                         Geocache geocache = database.Geocache.FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
                         FoundGeocache foundGeocache = null;
+                        FoundGeocache newFoundGeocache = null;
                         if (geocache != null)
                         {
                             foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
@@ -256,6 +266,7 @@ namespace Geocaching
                                 database.Remove(foundGeocache);
                                 database.SaveChanges();
                                 b.Handled = true;
+                                UpdateMap();
                             };
                         }
                         // A geocache not found by the current person. Change color, clickevent too.
@@ -266,7 +277,7 @@ namespace Geocaching
                             {
                                 UpdatePin(p, Colors.Green, 1);
                                 // Update database to picked geocache
-                                FoundGeocache newFoundGeocache = new FoundGeocache
+                                newFoundGeocache = new FoundGeocache
                                 {
                                     Person = person,
                                     Geocache = geocache
@@ -274,6 +285,7 @@ namespace Geocaching
                                 database.Add(newFoundGeocache);
                                 database.SaveChanges();
                                 b.Handled = true;
+                                UpdateMap();
                             };
                         }
                     }
@@ -282,6 +294,12 @@ namespace Geocaching
                     a.Handled = true;
                 };
             }
+            keepPerson = false;
+        }
+
+        private void Pin_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void OnMapLeftClick()
@@ -315,6 +333,7 @@ namespace Geocaching
             database.Add(geocache);
             database.SaveChanges();
 
+            currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
             UpdateMap();
         }
 
@@ -350,6 +369,7 @@ namespace Geocaching
             database.Add(person);
             database.SaveChanges();
 
+            currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
             UpdateMap();
         }
 
