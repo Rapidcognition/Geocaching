@@ -101,11 +101,15 @@ namespace Geocaching
         public Geocache Geocache { get; set; }
     }
 
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
     public partial class MainWindow : Window
     {
         // Contains the ID string needed to use the Bing map.
         // Instructions here: https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key
 
+        //private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
         private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
 
         private MapLayer layer;
@@ -336,36 +340,41 @@ namespace Geocaching
             string path = dialog.FileName;
             // Read the selected file here.
 
+            database.Person.RemoveRange(database.Person);
+            database.Geocache.RemoveRange(database.Geocache);
+            database.FoundGeocache.RemoveRange(database.FoundGeocache);
+            database.SaveChanges();
+
             string[] lines = File.ReadAllLines(path).ToArray();
-            List<Person> people = new List<Person>();
-            List<Geocache> geocaches = new List<Geocache>();
-            Geocache geocache;
-            List<FoundGeocache> found = new List<FoundGeocache>();
-            FoundGeocache foundcache;
-            Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
 
-
-            List<List<string>> collection = new List<List<string>>();
-            List<string> liness = new List<string>();
+            List<List<string>> collectionsOfObjects = new List<List<string>>();
+            List<string> objectsAsLines = new List<string>();
             foreach (var line in lines)
             {
                 if(line != "")
                 {
-                    liness.Add(line);
+                    objectsAsLines.Add(line);
                     continue;
                 }
                 else
                 {
-                    collection.Add(liness);
-                    liness = new List<string>();
+                    collectionsOfObjects.Add(objectsAsLines);
+                    objectsAsLines = new List<string>();
                 }
             }
-            collection.Add(liness);
+            collectionsOfObjects.Add(objectsAsLines);
 
+
+            List<Person> people = new List<Person>();
             Person p;
-            for (int i = 0; i < collection.Count(); i++)
+            List<Geocache> geocaches = new List<Geocache>();
+            Geocache geocache;
+            Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
+
+            for (int i = 0; i < collectionsOfObjects.Count(); i++)
             {
-                string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
+                // Because [i][0] always contains the person object in our instance.
+                string[] values = collectionsOfObjects[i][0].Split('|').Select(v => v.Trim()).ToArray();
                 p = new Person
                 {
                     FirstName = values[0],
@@ -378,11 +387,12 @@ namespace Geocaching
                     Latitude = double.Parse(values[7]),
                 };
                 people.Add(p);
-                for (int k = 1; k < collection[i].Count(); k++)
+
+                for (int k = 1; k < collectionsOfObjects[i].Count(); k++)
                 {
                     try
                     {
-                        string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
+                        string[] tmp = collectionsOfObjects[i][k].Split('|').Select(v => v.Trim()).ToArray();
                         geocache = new Geocache
                         {
                             Longitude = double.Parse(tmp[1]),
@@ -393,14 +403,19 @@ namespace Geocaching
                         };
                         geocaches.Add(geocache);
                     }
-                    catch(Exception e)
+                    // When we can't split a line into a geocache object, we know that we have struck the last line.
+                    // This means that the current line is an ex. "Found: n, n, n" line.
+                    catch
                     {
-                        // Insert cheat here
-                        string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+                        // Do 190km/h until we cant anymore, thus we "know" that we have found found...
+                        string[] numbers = collectionsOfObjects[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
                         pairs.Add(numbers, p);
                     }
                 }
             }
+
+            List<FoundGeocache> found = new List<FoundGeocache>();
+            FoundGeocache foundcache;
 
             foreach (KeyValuePair<string[], Person> item in pairs)
             {
@@ -414,19 +429,21 @@ namespace Geocaching
                         Geocache = geocaches[(int.Parse(t) - 1)],
                     };
                     found.Add(foundcache);
-                    database.Add(foundcache);
                 }
             }
 
-            foreach (Person person in people)
+            foreach (Person Person in people)
             {
-                database.Add(person);
+                database.Add(Person);
             }
-            foreach (Geocache cache in geocaches)
+            foreach (Geocache Geocache in geocaches)
             {
-                database.Add(cache);
+                database.Add(Geocache);
             }
-
+            foreach (FoundGeocache FoundGeocache in found)
+            {
+                database.Add(FoundGeocache);
+            }
             database.SaveChanges();
         }
 
