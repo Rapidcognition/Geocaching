@@ -379,22 +379,22 @@ namespace Geocaching
 
             string[] lines = File.ReadAllLines(path).ToArray();
 
-            List<List<string>> collectionsOfObjects = new List<List<string>>();
-            List<string> objectsAsLines = new List<string>();
+            List<List<string>> collection = new List<List<string>>();
+            List<string> linesWithObjects = new List<string>();
             foreach (var line in lines)
             {
                 if(line != "")
                 {
-                    objectsAsLines.Add(line);
+                    linesWithObjects.Add(line);
                     continue;
                 }
                 else
                 {
-                    collectionsOfObjects.Add(objectsAsLines);
-                    objectsAsLines = new List<string>();
+                    collection.Add(linesWithObjects);
+                    linesWithObjects = new List<string>();
                 }
             }
-            collectionsOfObjects.Add(objectsAsLines);
+            collection.Add(linesWithObjects);
 
 
             List<Person> people = new List<Person>();
@@ -403,10 +403,10 @@ namespace Geocaching
             Geocache geocache;
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
 
-            for (int i = 0; i < collectionsOfObjects.Count(); i++)
+            for (int i = 0; i < collection.Count(); i++)
             {
                 // Because [i][0] always contains the person object in our instance.
-                string[] values = collectionsOfObjects[i][0].Split('|').Select(v => v.Trim()).ToArray();
+                string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
                 p = new Person
                 {
                     FirstName = values[0],
@@ -419,14 +419,16 @@ namespace Geocaching
                     Latitude = double.Parse(values[7]),
                 };
                 people.Add(p);
+                database.Add(p);
 
-                for (int k = 1; k < collectionsOfObjects[i].Count(); k++)
+                for (int k = 1; k < collection[i].Count(); k++)
                 {
                     try
                     {
-                        string[] tmp = collectionsOfObjects[i][k].Split('|').Select(v => v.Trim()).ToArray();
+                        string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
                         geocache = new Geocache
                         {
+                            // Because tmp[0] is the GeocacheId
                             Longitude = double.Parse(tmp[1]),
                             Latitude = double.Parse(tmp[2]),
                             Content = tmp[3],
@@ -434,48 +436,33 @@ namespace Geocaching
                             Person = p,
                         };
                         geocaches.Add(geocache);
+                        database.Add(geocache);
                     }
                     // When we can't split a line into a geocache object, we know that we have struck the last line.
                     // This means that the current line is an ex. "Found: n, n, n" line.
                     catch
                     {
                         // Do 190km/h until we cant anymore, thus we "know" that we have found found...
-                        string[] numbers = collectionsOfObjects[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+                        string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
                         pairs.Add(numbers, p);
                     }
                 }
             }
 
             List<FoundGeocache> found = new List<FoundGeocache>();
-            FoundGeocache foundcache;
 
-            foreach (KeyValuePair<string[], Person> item in pairs)
-            {
-                string[] tmp = item.Key.Select(t => t).ToArray();
+            pairs.Select(pair => pair).ToList()
+                .ForEach(entry => entry.Key.Select(k => k).ToList()
+                .ForEach(key => 
+                database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
+                ));
 
-                foreach (var t in tmp)
-                {
-                    foundcache = new FoundGeocache
-                    {
-                        Person = item.Value,
-                        Geocache = geocaches[(int.Parse(t) - 1)],
-                    };
-                    found.Add(foundcache);
-                }
-            }
-
-            foreach (Person Person in people)
-            {
-                database.Add(Person);
-            }
-            foreach (Geocache Geocache in geocaches)
-            {
-                database.Add(Geocache);
-            }
-            foreach (FoundGeocache FoundGeocache in found)
-            {
-                database.Add(FoundGeocache);
-            }
+            // The same as the one above
+            //foreach (KeyValuePair<string[], Person> item in pairs)
+            //{
+            //    item.Key.Select(t => t).ToList()
+            //        .ForEach(t => database.Add(new FoundGeocache { Person = item.Value, Geocache = geocaches[(int.Parse(t) - 1)] }));
+            //}
             database.SaveChanges();
         }
 
