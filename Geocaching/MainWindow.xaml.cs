@@ -22,7 +22,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Geocaching
 {
-
     public class AppDbContext : DbContext
     {
         public DbSet<Person> Person { get; set; }
@@ -77,7 +76,7 @@ namespace Geocaching
         {
             string tmp = this.FirstName + " | " + this.LastName + " | " +
                         this.Country + " | " + this.City + " | " + this.StreetName + " | " +
-                        this.StreetNumber + " | " + this.Longitude + " | " + this.Latitude;
+                        this.StreetNumber + " | " + this.Latitude + " | " + this.Longitude;
             return tmp;
         }
     }
@@ -102,8 +101,8 @@ namespace Geocaching
         // Helper function to build strings that suit format of the textfile.
         public override string ToString()
         {
-            string tmp = this.GeocacheId + " | " + this.Longitude + " | " +
-                            this.Latitude + " | " + this.Content + " | " + this.Message;
+            string tmp = this.GeocacheId + " | " + this.Latitude + " | " +
+                            this.Longitude + " | " + this.Content + " | " + this.Message;
             return tmp;
         }
     }
@@ -455,8 +454,8 @@ namespace Geocaching
                     City = values[3],
                     StreetName = values[4],
                     StreetNumber = byte.Parse(values[5]),
-                    Longitude = double.Parse(values[6]),
-                    Latitude = double.Parse(values[7]),
+                    Latitude = double.Parse(values[6]),
+                    Longitude = double.Parse(values[7]),
                 };
                 people.Add(p);
                 database.Add(p);
@@ -469,8 +468,8 @@ namespace Geocaching
                         geocache = new Geocache
                         {
                             // Because tmp[0] is the GeocacheId
-                            Longitude = double.Parse(tmp[1]),
-                            Latitude = double.Parse(tmp[2]),
+                            Latitude = double.Parse(tmp[1]),
+                            Longitude = double.Parse(tmp[2]),
                             Content = tmp[3],
                             Message = tmp[4],
                             Person = p,
