@@ -154,8 +154,6 @@ namespace Geocaching
 
         private Location latestClickLocation;
 
-        private bool keepPerson = false;
-
         private AppDbContext database = new AppDbContext();
 
         public MainWindow()
@@ -193,8 +191,10 @@ namespace Geocaching
 
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    OnMapLeftClick();
+                    currentPerson = null;
+                    UpdateMap();
                 }
+
             };
 
             UpdateMap();
@@ -215,20 +215,25 @@ namespace Geocaching
 
         private void UpdateMap()
         {
+            foreach(Pushpin p in layer.Children)
+            {
+                RemoveLogicalChild(p);
+            }
             // Put all the pins on the map and make click events on them. 
             if (currentPerson == null)
             {
                 foreach (Geocache g in database.Geocache)
                 {
+                    // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
                     Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
-                    var pin = AddPin(location, g.Content, Colors.Gray, 1);
+                    var pin = AddPin(location, g.Content, Colors.Gray, 1, g);
                 }
             }
 
             foreach (Person person in database.Person)
             {
                 Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
-                var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1);
+                var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1, person);
 
                 pin.MouseDown += (s, a) =>
                 {
@@ -237,9 +242,12 @@ namespace Geocaching
 
                     foreach (Pushpin p in layer.Children)
                     {
+                        try { p.MouseDown -= ClickGreenButton; }
+                        catch { }
+                        try { p.MouseDown -= ClickRedButton; }
+                        catch { }
                         Geocache geocache = database.Geocache.FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
                         FoundGeocache foundGeocache = null;
-                        FoundGeocache newFoundGeocache = null;
                         if (geocache != null)
                         {
                             foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
@@ -250,43 +258,25 @@ namespace Geocaching
                         {
                             UpdatePin(p, Colors.Blue, 0.5);
                         }
+
                         // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
                         else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
                         {
                             UpdatePin(p, Colors.Black, 1);
                         }
+
                         // A Geocache found by the current person. Should have clickevent.
                         else if (geocache != null && foundGeocache != null)
                         {
                             UpdatePin(p, Colors.Green, 1);
-                            p.MouseDown += (t, b) =>
-                            {
-                                UpdatePin(p, Colors.Red, 1);
-                                // Update database to not picked geocache
-                                database.Remove(foundGeocache);
-                                database.SaveChanges();
-                                b.Handled = true;
-                                UpdateMap();
-                            };
+                            p.MouseDown += ClickGreenButton;
                         }
+
                         // A geocache not found by the current person. Change color, clickevent too.
                         else if (geocache != null && foundGeocache == null)
                         {
                             UpdatePin(p, Colors.Red, 1);
-                            p.MouseDown += (t, b) =>
-                            {
-                                UpdatePin(p, Colors.Green, 1);
-                                // Update database to picked geocache
-                                newFoundGeocache = new FoundGeocache
-                                {
-                                    Person = person,
-                                    Geocache = geocache
-                                };
-                                database.Add(newFoundGeocache);
-                                database.SaveChanges();
-                                b.Handled = true;
-                                UpdateMap();
-                            };
+                            p.MouseDown += ClickRedButton;
                         }
                     }
                     
@@ -294,18 +284,36 @@ namespace Geocaching
                     a.Handled = true;
                 };
             }
-            keepPerson = false;
         }
 
-        private void Pin_MouseDown(object sender, MouseButtonEventArgs e)
+        private void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
-            throw new NotImplementedException();
+            Pushpin pin = (Pushpin)sender;
+            Geocache geocache = (Geocache)pin.Tag;
+            FoundGeocache foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+            database.Remove(foundGeocache);
+            database.SaveChanges();
+            UpdatePin(pin, Colors.Red, 1);
+            pin.MouseDown -= ClickGreenButton;
+            pin.MouseDown += ClickRedButton;
+            e.Handled = true;
         }
 
-        private void OnMapLeftClick()
+        private void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
-            currentPerson = null;
-            UpdateMap();
+            Pushpin pin = (Pushpin)sender;
+            Geocache geocache = (Geocache)pin.Tag;
+            FoundGeocache foundGeocache = new FoundGeocache
+            {
+                Person = currentPerson,
+                Geocache = geocache
+            };
+            database.Add(foundGeocache);
+            database.SaveChanges();
+            UpdatePin(pin, Colors.Green, 1);
+            pin.MouseDown -= ClickRedButton;
+            pin.MouseDown += ClickGreenButton;
+            e.Handled = true;
         }
 
         private void OnAddGeocacheClick(object sender, RoutedEventArgs args)
@@ -373,13 +381,14 @@ namespace Geocaching
             UpdateMap();
         }
 
-        private Pushpin AddPin(Location location, string tooltip, Color color, double opacity)
+        private Pushpin AddPin(Location location, string tooltip, Color color, double opacity, object o)
         {
             var pin = new Pushpin();
             pin.Cursor = Cursors.Hand;
             pin.Background = new SolidColorBrush(color);
             pin.Opacity = opacity;
             pin.Location = location;
+            pin.Tag = o;
             ToolTipService.SetToolTip(pin, tooltip);
             ToolTipService.SetInitialShowDelay(pin, 0);
             layer.AddChild(pin, new Location(location.Latitude, location.Longitude));
@@ -499,7 +508,6 @@ namespace Geocaching
             database.SaveChanges();
         }
 
-
         // Hämta allt från databasen och spara i textfilen.
         private void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
@@ -539,6 +547,11 @@ namespace Geocaching
             }
             lines.RemoveAt(lines.Count()-1);
             File.WriteAllLines(path, lines);
+        }
+
+        private void SaveAndExit(object sender, RoutedEventArgs args)
+        {
+
         }
     }
 }
