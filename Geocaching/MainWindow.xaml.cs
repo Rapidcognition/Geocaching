@@ -484,12 +484,10 @@ namespace Geocaching
                 }
             }
 
-            List<FoundGeocache> found = new List<FoundGeocache>();
-
             pairs.Select(pair => pair).ToList()
-                .ForEach(entry => entry.Key.Select(k => k).ToList()
-                .ForEach(key => 
-                database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
+                .ForEach(entry => 
+                    entry.Key.Select(k => k).ToList().ForEach(key => 
+                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
                 ));
 
             // The same as the one above
