@@ -318,31 +318,38 @@ namespace Geocaching
 
         private void OnAddGeocacheClick(object sender, RoutedEventArgs args)
         {
-            var dialog = new GeocacheDialog();
-            dialog.Owner = this;
-            dialog.ShowDialog();
-            if (dialog.DialogResult == false)
+            if(currentPerson != null)
             {
-                return;
+                var dialog = new GeocacheDialog();
+                dialog.Owner = this;
+                dialog.ShowDialog();
+                if (dialog.DialogResult == false)
+                {
+                    return;
+                }
+
+                string contents = dialog.GeocacheContents;
+                string message = dialog.GeocacheMessage;
+                // Add geocache to map and database here.
+
+                // Add to database
+                Geocache geocache = new Geocache
+                {
+                    Content = contents,
+                    Message = message,
+                    Longitude = latestClickLocation.Longitude,
+                    Latitude = latestClickLocation.Latitude
+                };
+                database.Add(geocache);
+                database.SaveChanges();
+
+                currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
+                UpdateMap();
             }
-
-            string contents = dialog.GeocacheContents;
-            string message = dialog.GeocacheMessage;
-            // Add geocache to map and database here.
-
-            // Add to database
-            Geocache geocache = new Geocache
+            else
             {
-                Content = contents,
-                Message = message,
-                Longitude = latestClickLocation.Longitude,
-                Latitude = latestClickLocation.Latitude
-            };
-            database.Add(geocache);
-            database.SaveChanges();
-
-            currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
-            UpdateMap();
+                MessageBox.Show("Please select a person before creating a geocache.");
+            }
         }
 
         private void OnAddPersonClick(object sender, RoutedEventArgs args)
