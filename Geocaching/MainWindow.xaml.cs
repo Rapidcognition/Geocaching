@@ -222,18 +222,22 @@ namespace Geocaching
             // Put all the pins on the map and make click events on them. 
             if (currentPerson == null)
             {
-                foreach (Geocache g in database.Geocache)
+                foreach (Geocache g in database.Geocache.Include(g => g.Person))
                 {
                     // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
                     Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
-                    var pin = AddPin(location, g.Content, Colors.Gray, 1, g);
+                    string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
+                    var pin = AddPin(location, tooltipp, Colors.Gray, 1, g);
+                    // koordinater, meddelande, innehåll och vilken person som har placerat den.
+                    
                 }
             }
 
             foreach (Person person in database.Person)
             {
                 Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
-                var pin = AddPin(location, person.FirstName + " " + person.LastName, Colors.Blue, 1, person);
+                string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
+                var pin = AddPin(location, tooptipp, Colors.Blue, 1, person);
 
                 pin.MouseDown += (s, a) =>
                 {
@@ -254,7 +258,7 @@ namespace Geocaching
                         }
 
                         // If the pushpin represents a person, dabble with opacity
-                        if (geocache == null && p.ToolTip.ToString() != person.FirstName + " " + person.LastName)
+                        if (geocache == null && p.ToolTip.ToString() != tooptipp)
                         {
                             UpdatePin(p, Colors.Blue, 0.5);
                         }
@@ -263,6 +267,7 @@ namespace Geocaching
                         else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
                         {
                             UpdatePin(p, Colors.Black, 1);
+                            p.MouseDown += (t, b) => { b.Handled = true; };
                         }
 
                         // A Geocache found by the current person. Should have clickevent.
