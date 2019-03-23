@@ -342,7 +342,8 @@ namespace Geocaching
                     Content = contents,
                     Message = message,
                     Longitude = latestClickLocation.Longitude,
-                    Latitude = latestClickLocation.Latitude
+                    Latitude = latestClickLocation.Latitude,
+                    Person = currentPerson,
                 };
                 database.Add(geocache);
                 database.SaveChanges();
