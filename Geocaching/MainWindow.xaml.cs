@@ -1,7 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maps.MapControl.WPF;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,11 +19,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Logging;
-using System.IO;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Geocaching
 {
@@ -97,7 +97,6 @@ namespace Geocaching
         public Person Person { get; set; }
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
 
-
         // Helper function to build strings that suit format of the textfile.
         public override string ToString()
         {
@@ -132,26 +131,20 @@ namespace Geocaching
         }
     }
 
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         // Contains the ID string needed to use the Bing map.
         // Instructions here: https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key
-
-        //private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
         private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
 
         private MapLayer layer;
-
-        // Contains the location of the latest click on the map.
-        // The Location object in turn contains information like longitude and latitude.
 
         private Person currentPerson = null;
 
         private Location gothenburg = new Location(57.719021, 11.991202);
 
+        // Contains the location of the latest click on the map.
+        // The Location object in turn contains information like longitude and latitude.
         private Location latestClickLocation;
 
         private AppDbContext database = new AppDbContext();
@@ -166,13 +159,6 @@ namespace Geocaching
         private void Start()
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-
-            //if (applicationId == null)
-            //{
-            //    MessageBox.Show("Please set the applicationId variable before running this program.");
-            //    Environment.Exit(0);
-            //}
-
             CreateMap();
         }
 
@@ -342,7 +328,8 @@ namespace Geocaching
                 {
                     Content = contents,
                     Message = message,
-                    Longitude = latestClickLocation.Longitude,
+                    //Longitude = latestClickLocation.Longitude,
+                    Longitude = Location.GeoCoordinate,
                     Latitude = latestClickLocation.Latitude
                 };
                 database.Add(geocache);
@@ -563,7 +550,7 @@ namespace Geocaching
 
         private void SaveAndExit(object sender, RoutedEventArgs args)
         {
-
+            MessageBox.Show("Nothing here yet");
         }
     }
 }
