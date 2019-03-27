@@ -19,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Device.Location;
 
 namespace Geocaching
 {
@@ -199,6 +200,7 @@ namespace Geocaching
             map.ContextMenu.Items.Add(hejMenuItem);
         }
 
+        // TODO: Add Geocoordinate
         private void UpdateMap()
         {
             foreach(Pushpin p in layer.Children)
