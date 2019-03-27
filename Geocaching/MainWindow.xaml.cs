@@ -152,6 +152,9 @@ namespace Geocaching
 
         private AppDbContext database = new AppDbContext();
 
+        // For the lock when doing an async operation.
+        Object myLock = new Object();
+
         public MainWindow()
         {
             latestClickLocation = gothenburg;
@@ -199,6 +202,7 @@ namespace Geocaching
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
         }
 
+        // TODO: Async operations on Read and Write.
         private void UpdateMap()
         {
             foreach(Pushpin p in layer.Children)
@@ -283,6 +287,7 @@ namespace Geocaching
             }
         }
 
+        // TODO: Async operations on Read and Write.
         private void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -298,6 +303,7 @@ namespace Geocaching
             e.Handled = true;
         }
 
+        // TODO: Async operations on Read and Write.
         private void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -315,6 +321,7 @@ namespace Geocaching
             e.Handled = true;
         }
 
+        // TODO: Async operations on Read and Write.
         private void OnAddGeocacheClick(object sender, RoutedEventArgs args)
         {
             if(currentPerson != null)
@@ -355,6 +362,7 @@ namespace Geocaching
             }
         }
 
+        // TODO: Async operations on Read and Write.
         private void OnAddPersonClick(object sender, RoutedEventArgs args)
         {
             var dialog = new PersonDialog();
@@ -412,7 +420,7 @@ namespace Geocaching
             pin.Opacity = opacity;
         }
 
-        // Spara allt i textfilen till databasen.
+        // TODO: Async operations on Read and Write.
         private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
@@ -519,7 +527,7 @@ namespace Geocaching
             database.SaveChanges();
         }
 
-        // Hämta allt från databasen och spara i textfilen.
+        // TODO: Async operations on Read and Write.
         private void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.SaveFileDialog();
