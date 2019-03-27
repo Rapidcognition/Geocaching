@@ -142,11 +142,13 @@ namespace Geocaching
 
         private Person currentPerson = null;
 
-        private Location gothenburg = new Location(57.719021, 11.991202);
+        private GeoCoordinate gothenburg = new GeoCoordinate { Latitude = 57.719021, Longitude = 11.991202 };
+
+        private GeoCoordinate geo;
 
         // Contains the location of the latest click on the map.
         // The Location object in turn contains information like longitude and latitude.
-        private Location latestClickLocation;
+        private GeoCoordinate latestClickLocation;
 
         private AppDbContext database = new AppDbContext();
 
@@ -166,7 +168,7 @@ namespace Geocaching
         private void CreateMap()
         {
             map.CredentialsProvider = new ApplicationIdCredentialsProvider(applicationId);
-            map.Center = gothenburg;
+            map.Center = new Location { Latitude = gothenburg.Latitude, Longitude = gothenburg.Longitude };
             map.ZoomLevel = 12;
             layer = new MapLayer();
             map.Children.Add(layer);
@@ -174,14 +176,14 @@ namespace Geocaching
             MouseDown += (sender, e) =>
             {
                 var point = e.GetPosition(this);
-                latestClickLocation = map.ViewportPointToLocation(point);
+                latestClickLocation.Latitude = map.ViewportPointToLocation(point).Latitude;
+                latestClickLocation.Longitude = map.ViewportPointToLocation(point).Longitude;
 
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
                     currentPerson = null;
                     UpdateMap();
                 }
-
             };
 
             UpdateMap();
@@ -195,12 +197,8 @@ namespace Geocaching
             var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
             map.ContextMenu.Items.Add(addGeocacheMenuItem);
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
-
-            var hejMenuItem = new MenuItem { Header = "Hej" };
-            map.ContextMenu.Items.Add(hejMenuItem);
         }
 
-        // TODO: Add Geocoordinate
         private void UpdateMap()
         {
             foreach(Pushpin p in layer.Children)
@@ -212,20 +210,23 @@ namespace Geocaching
             {
                 foreach (Geocache g in database.Geocache.Include(g => g.Person))
                 {
+                    geo = new GeoCoordinate();
+                    geo.Longitude = g.Longitude;
+                    geo.Latitude = g.Latitude;
                     // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
-                    Location location = new Location { Longitude = g.Longitude, Latitude = g.Latitude };
                     string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
-                    var pin = AddPin(location, tooltipp, Colors.Gray, 1, g);
+                    var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
                     // koordinater, meddelande, innehåll och vilken person som har placerat den.
-                    
                 }
             }
 
             foreach (Person person in database.Person)
             {
-                Location location = new Location { Longitude = person.Longitude, Latitude = person.Latitude };
+                geo = new GeoCoordinate();
+                geo.Longitude = person.Longitude;
+                geo.Latitude = person.Latitude;
                 string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
-                var pin = AddPin(location, tooptipp, Colors.Blue, 1, person);
+                var pin = AddPin(geo, tooptipp, Colors.Blue, 1, person);
 
                 pin.MouseDown += (s, a) =>
                 {
@@ -238,11 +239,14 @@ namespace Geocaching
                         catch { }
                         try { p.MouseDown -= ClickRedButton; }
                         catch { }
-                        Geocache geocache = database.Geocache.FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+                        Geocache geocache = database.Geocache
+                            .FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+
                         FoundGeocache foundGeocache = null;
                         if (geocache != null)
                         {
-                            foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
+                            foundGeocache = database.FoundGeocache
+                                .FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
                         }
 
                         // If the pushpin represents a person, dabble with opacity
@@ -283,7 +287,9 @@ namespace Geocaching
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
-            FoundGeocache foundGeocache = database.FoundGeocache.FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+            FoundGeocache foundGeocache = database.FoundGeocache
+                .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+
             database.Remove(foundGeocache);
             database.SaveChanges();
             UpdatePin(pin, Colors.Red, 1);
@@ -337,7 +343,10 @@ namespace Geocaching
                 database.Add(geocache);
                 database.SaveChanges();
 
-                currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
+                currentPerson = database.Person
+                    .FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude 
+                    && p.Latitude == latestClickLocation.Latitude);
+
                 UpdateMap();
             }
             else
@@ -382,8 +391,9 @@ namespace Geocaching
             UpdateMap();
         }
 
-        private Pushpin AddPin(Location location, string tooltip, Color color, double opacity, object o)
+        private Pushpin AddPin(GeoCoordinate geo, string tooltip, Color color, double opacity, object o)
         {
+            var location = new Location { Longitude = geo.Longitude, Latitude = geo.Latitude };
             var pin = new Pushpin();
             pin.Cursor = Cursors.Hand;
             pin.Background = new SolidColorBrush(color);
@@ -392,7 +402,7 @@ namespace Geocaching
             pin.Tag = o;
             ToolTipService.SetToolTip(pin, tooltip);
             ToolTipService.SetInitialShowDelay(pin, 0);
-            layer.AddChild(pin, new Location(location.Latitude, location.Longitude));
+            layer.AddChild(pin, location);
             return pin;
         }
 
