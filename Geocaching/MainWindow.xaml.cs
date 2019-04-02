@@ -194,7 +194,28 @@ namespace Geocaching
                 }
             };
 
-            UpdateMap();
+            foreach (Person person in database.Person)
+            {
+                geo = new GeoCoordinate();
+                geo.Longitude = person.Longitude;
+                geo.Latitude = person.Latitude;
+                string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
+                var pin = AddPin(geo, tooptipp, Colors.Blue, 1, person);
+
+                pin.MouseDown += PersonClick;
+            }
+
+            foreach (Geocache g in database.Geocache.Include(g => g.Person))
+            {
+                geo = new GeoCoordinate();
+                geo.Longitude = g.Longitude;
+                geo.Latitude = g.Latitude;
+                // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
+                string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
+                var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
+                // koordinater, meddelande, innehåll och vilken person som har placerat den.
+            }
+
 
             map.ContextMenu = new ContextMenu();
 
@@ -205,91 +226,6 @@ namespace Geocaching
             var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
             map.ContextMenu.Items.Add(addGeocacheMenuItem);
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
-        }
-
-        // TODO: Async operations on Read and Write.
-        private void UpdateMap()
-        {
-            foreach(Pushpin p in layer.Children)
-            {
-                RemoveLogicalChild(p);
-            }
-            // Put all the pins on the map and make click events on them. 
-            if (currentPerson == null)
-            {
-                foreach (Geocache g in database.Geocache.Include(g => g.Person))
-                {
-                    geo = new GeoCoordinate();
-                    geo.Longitude = g.Longitude;
-                    geo.Latitude = g.Latitude;
-                    // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
-                    string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
-                    var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
-                    // koordinater, meddelande, innehåll och vilken person som har placerat den.
-                }
-            }
-
-            foreach (Person person in database.Person)
-            {
-                geo = new GeoCoordinate();
-                geo.Longitude = person.Longitude;
-                geo.Latitude = person.Latitude;
-                string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
-                var pin = AddPin(geo, tooptipp, Colors.Blue, 1, person);
-
-                pin.MouseDown += (s, a) =>
-                {
-                    currentPerson = person;
-                    UpdatePin(pin, Colors.Blue, 1);
-
-                    foreach (Pushpin p in layer.Children)
-                    {
-                        try { p.MouseDown -= ClickGreenButton; }
-                        catch { }
-                        try { p.MouseDown -= ClickRedButton; }
-                        catch { }
-                        Geocache geocache = database.Geocache.
-                            FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
-
-                        FoundGeocache foundGeocache = null;
-                        if (geocache != null)
-                        {
-                            foundGeocache = database.FoundGeocache.
-                                FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
-                        }
-
-                        // If the pushpin represents a person, dabble with opacity
-                        if (geocache == null && p.ToolTip.ToString() != tooptipp)
-                        {
-                            UpdatePin(p, Colors.Blue, 0.5);
-                        }
-
-                        // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
-                        else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
-                        {
-                            UpdatePin(p, Colors.Black, 1);
-                            p.MouseDown += (t, b) => { b.Handled = true; };
-                        }
-
-                        // A Geocache found by the current person. Should have clickevent.
-                        else if (geocache != null && foundGeocache != null)
-                        {
-                            UpdatePin(p, Colors.Green, 1);
-                            p.MouseDown += ClickGreenButton;
-                        }
-
-                        // A geocache not found by the current person. Change color, clickevent too.
-                        else if (geocache != null && foundGeocache == null)
-                        {
-                            UpdatePin(p, Colors.Red, 1);
-                            p.MouseDown += ClickRedButton;
-                        }
-                    }
-                    
-                    // Prevent click from being triggered on map.
-                    a.Handled = true;
-                };
-            }
         }
 
         // TODO: Async operations on Read and Write.
@@ -304,8 +240,8 @@ namespace Geocaching
             database.Remove(foundGeocache);
             database.SaveChanges();
             UpdatePin(pin, Colors.Red, 1);
-            pin.MouseDown -= ClickGreenButton;
             pin.MouseDown += ClickRedButton;
+            pin.MouseDown -= ClickGreenButton;
             e.Handled = true;
         }
 
@@ -322,11 +258,76 @@ namespace Geocaching
             database.Add(foundGeocache);
             database.SaveChanges();
             UpdatePin(pin, Colors.Green, 1);
-            pin.MouseDown -= ClickRedButton;
             pin.MouseDown += ClickGreenButton;
+            pin.MouseDown -= ClickRedButton;
             e.Handled = true;
         }
 
+        private void Handled(object sender, MouseButtonEventArgs e)
+        {
+             e.Handled = true; 
+        }
+
+        private void PersonClick(object sender, MouseButtonEventArgs e)
+        {
+            {
+                Pushpin pin = (Pushpin)sender;
+                Person person = (Person)pin.Tag;
+                string tooptipp = pin.ToolTip.ToString();
+                currentPerson = person;
+                UpdatePin(pin, Colors.Blue, 1);
+
+                foreach (Pushpin p in layer.Children)
+                {
+                    try { p.MouseDown -= ClickGreenButton; }
+                    catch { }
+                    try { p.MouseDown -= ClickRedButton; }
+                    catch { }
+                    try { p.MouseDown -= Handled; }
+                    catch { }
+                    Geocache geocache = database.Geocache.
+                        FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+
+                    FoundGeocache foundGeocache = null;
+                    if (geocache != null)
+                    {
+                        foundGeocache = database.FoundGeocache.
+                            FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
+                    }
+
+                    // If the pushpin represents a person, dabble with opacity
+                    if (geocache == null && p.ToolTip.ToString() != tooptipp)
+                    {
+                        UpdatePin(p, Colors.Blue, 0.5);
+                    }
+
+                    // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
+                    else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
+                    {
+                        UpdatePin(p, Colors.Black, 1);
+                        p.MouseDown += Handled;
+                    }
+
+                    // A Geocache found by the current person. Should have clickevent.
+                    else if (geocache != null && foundGeocache != null)
+                    {
+                        UpdatePin(p, Colors.Green, 1);
+                        p.MouseDown += ClickGreenButton;
+                    }
+
+                    // A geocache not found by the current person. Change color, clickevent too.
+                    else if (geocache != null && foundGeocache == null)
+                    {
+                        UpdatePin(p, Colors.Red, 1);
+                        p.MouseDown += ClickRedButton;
+                    }
+                }
+
+                // Prevent click from being triggered on map.
+                e.Handled = true;
+            };
+        }
+        
         // TODO: Async operations on Read and Write.
         private void OnAddGeocacheClick(object sender, RoutedEventArgs args)
         {
@@ -356,11 +357,15 @@ namespace Geocaching
 
                 database.Add(geocache);
                 database.SaveChanges();
-                currentPerson = database.Person.
-                    FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude 
-                    && p.Latitude == latestClickLocation.Latitude);
 
-                UpdateMap();
+                GeoCoordinate geo = new GeoCoordinate();
+                geo.Longitude = geocache.Longitude;
+                geo.Latitude = geocache.Latitude;
+
+                string tooltipp = geocache.Latitude + ", " + geocache.Longitude + "\r" + geocache.Person.FirstName + " " + geocache.Person.LastName + " placerade ut denna geocache med " + geocache.Content + " i. \r \"" + geocache.Message + "\"";
+
+                var pin = AddPin(geo, tooltipp, Colors.Black, 1, geocache);
+                pin.MouseDown += Handled;
             }
             else
             {
@@ -402,11 +407,17 @@ namespace Geocaching
             database.Add(person);
             database.SaveChanges();
 
-            currentPerson = database.Person.
-                FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude 
-                    && p.Latitude == latestClickLocation.Latitude);
+            GeoCoordinate geo = new GeoCoordinate();
+            geo.Longitude = person.Longitude;
+            geo.Latitude = person.Latitude;
 
-            UpdateMap();
+            string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
+
+            var pin = AddPin(geo, tooptipp, Colors.Blue, 1, person);
+
+            currentPerson = person;
+
+            pin.MouseDown += PersonClick;
         }
 
         private Pushpin AddPin(GeoCoordinate geo, string tooltip, Color color, double opacity, object o)
