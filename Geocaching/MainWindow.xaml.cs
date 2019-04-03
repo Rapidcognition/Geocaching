@@ -70,9 +70,6 @@ namespace Geocaching
         public string StreetName { get; set; }
         public byte StreetNumber { get; set; }
 
-        // ??????
-        //public ICollection<Geocache> Geocache { get; set; }
-
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
 
         // Helper function to build strings that suit format of the textfile.
@@ -527,12 +524,7 @@ namespace Geocaching
             List<Geocache> geocaches = new List<Geocache>();
             Geocache geocache;
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
-            Dictionary<string[], Geocache> geoint = new Dictionary<string[], Geocache>();
-
-            await Task.WhenAll(LoadToDatabase);
-
-            Task Loader = Task.Run(() =>
-            {
+            Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
 
                 for (int i = 0; i < collection.Count(); i++)
                 {
@@ -553,73 +545,43 @@ namespace Geocaching
                     people.Add(person);
                     database.Add(person);
 
-                    for (int k = 1; k < collection[i].Count(); k++)
+                for (int k = 1; k < collection[i].Count(); k++)
+                {
+                    try
                     {
-                        try
+                        string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
+                        geocache = new Geocache
                         {
-
-                            string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
-                            geocache = new Geocache
-                            {
-                                // Because tmp[0] is the GeocacheId
-                                Latitude = double.Parse(tmp[1]),
-                                Longitude = double.Parse(tmp[2]),
-                                Content = tmp[3],
-                                Message = tmp[4],
-                                Person = person,
-                            };
-                            geocaches.Add(geocache);
-                            database.Add(geocache);
-
-
-                            string[] foo = collection[i][collection[i].Count()].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
-
-                            geoint.Add(foo, geocache);
-                        }
-                        // When we can't split a line into a geocache object, we know that we have struck the last line.
-                        // This means that the current line is an ex. "Found: n, n, n" line.
-                        catch
-                        {
-                            // Do 190km/h until we cant anymore, thus we "know" that we have found found...
-                            string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
-                            pairs.Add(numbers, person);
-                        }
+                            // Because tmp[0] is the GeocacheId
+                            Latitude = double.Parse(tmp[1]),
+                            Longitude = double.Parse(tmp[2]),
+                            Content = tmp[3],
+                            Message = tmp[4],
+                            Person = p,
+                        };
+                        geocaches.Add(geocache);
+                        geopairs.Add(int.Parse(tmp[0]), geocache);
+                        database.Add(p);
+                        database.Add(geocache);
+                    }
+                    // When we can't split a line into a geocache object, we know that we have struck the last line.
+                    // This means that the current line is an ex. "Found: n, n, n" line.
+                    catch
+                    {
+                        // Do 190km/h until we cant anymore, thus we "know" that we have found found...
+                        string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+                        if(!numbers.Contains("")) pairs.Add(numbers, p);
                     }
                 }
-                database.SaveChanges();
-            });
-            await Task.WhenAll(Loader);
+            }
 
-            //Dictionary<Person, int[]> FoundBy = new Dictionary<Person, int[]>();
+            Geocache gz = geopairs.FirstOrDefault(g => g.Key == int.Parse("65")).Value;
 
-            //foreach (KeyValuePair<string[], Person> pair in pairs)
-            //{
-            //    int[] tmp = new int[pair.Key.Length];
-            //    int n = 0;
-            //    foreach (string key in pair.Key)
-            //    {
-            //        tmp[n] = geoint.First(g => g.Key == int.Parse(key)).Value.GeocacheId;
-            //        n++;
-            //    }  
-            //    FoundBy.Add(pair.Value, tmp);
-            //}
-
-
-
-            Geocache[] gs = database.Geocache.ToArray();
-
-            //foreach (KeyValuePair<string[], Person> item in pairs)
-            //{
-            //    foreach (string thing in item.Key)
-            //    {
-            //        geoint.FirstOrDefault(g => g.Key.ToList().ForEach(z => database.Add(new FoundGeocache { Person = item.Value, Geocache = geoint.FirstOrDefault(t => int.Parse(z) == int.Parse(thing)).Value })));
-            //    }
-            //}
-            
-            //pairs.ToList()
-            //    .ForEach(entry => entry.Key.ToList()
-            //        .ForEach(key => database.Add(new FoundGeocache { Person = entry.Value, Geocache = geoint.FirstOrDefault(g => g.Key.ToList().ForEach(x => int.Parse(x) == int.Parse(key)).Value })
-            //));
+            pairs.Select(pair => pair).ToList()
+                .ForEach(entry => 
+                    entry.Key.Select(k => k).ToList().ForEach(key => 
+                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
+                ));
 
             await database.SaveChangesAsync();
 
