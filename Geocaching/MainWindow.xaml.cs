@@ -174,8 +174,14 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        private void CreateMap()
+        // DONE
+        private async void CreateMap()
         {
+            try
+            {
+                layer.Children.Clear();
+            }
+            catch { }
             map.CredentialsProvider = new ApplicationIdCredentialsProvider(applicationId);
             map.Center = new Location { Latitude = gothenburg.Latitude, Longitude = gothenburg.Longitude };
             map.ZoomLevel = 12;
@@ -207,7 +213,11 @@ namespace Geocaching
                 }
             };
 
-            foreach (Person person in database.Person)
+            var people = await Task.Run( () =>
+            {
+                return database.Person.ToArray();
+            });
+            foreach (Person person in people)
             {
                 geo = new GeoCoordinate();
                 geo.Longitude = person.Longitude;
@@ -218,7 +228,11 @@ namespace Geocaching
                 pin.MouseDown += PersonClick;
             }
 
-            foreach (Geocache g in database.Geocache.Include(g => g.Person))
+            var geocaches = await Task.Run(() =>
+            {
+                return database.Geocache.Include(g => g.Person);
+            });
+            foreach (Geocache g in geocaches)
             {
                 geo = new GeoCoordinate();
                 geo.Longitude = g.Longitude;
@@ -228,7 +242,6 @@ namespace Geocaching
                 var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
                 // koordinater, meddelande, innehåll och vilken person som har placerat den.
             }
-
 
             map.ContextMenu = new ContextMenu();
 
@@ -242,7 +255,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        private void ClickGreenButton(object sender, MouseButtonEventArgs e)
+        // DONE
+        private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
@@ -251,7 +265,7 @@ namespace Geocaching
                 FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
 
             database.Remove(foundGeocache);
-            database.SaveChanges();
+            await database.SaveChangesAsync();
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
             pin.MouseDown -= ClickGreenButton;
@@ -259,7 +273,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        private void ClickRedButton(object sender, MouseButtonEventArgs e)
+        // DONE
+        private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
@@ -268,8 +283,8 @@ namespace Geocaching
                 Person = currentPerson,
                 Geocache = geocache
             };
-            database.Add(foundGeocache);
-            database.SaveChanges();
+            await database.AddAsync(foundGeocache);
+            await database.SaveChangesAsync();
             UpdatePin(pin, Colors.Green, 1);
             pin.MouseDown += ClickGreenButton;
             pin.MouseDown -= ClickRedButton;
@@ -278,71 +293,79 @@ namespace Geocaching
 
         private void Handled(object sender, MouseButtonEventArgs e)
         {
-             e.Handled = true; 
+             e.Handled = true;
         }
 
-        private void PersonClick(object sender, MouseButtonEventArgs e)
+        // TODO: Async operations on Read and Write.
+        // DONE
+        private async void PersonClick(object sender, MouseButtonEventArgs e)
         {
+            Pushpin pin = (Pushpin)sender;
+            Person person = (Person)pin.Tag;
+            string tooptipp = pin.ToolTip.ToString();
+            currentPerson = person;
+            UpdatePin(pin, Colors.Blue, 1);
+
+
+            Geocache[] geocaches = await Task.Run(() =>
             {
-                Pushpin pin = (Pushpin)sender;
-                Person person = (Person)pin.Tag;
-                string tooptipp = pin.ToolTip.ToString();
-                currentPerson = person;
-                UpdatePin(pin, Colors.Blue, 1);
+                return database.Geocache.Select(a => a).ToArray();
+            });
 
-                foreach (Pushpin p in layer.Children)
+            foreach (Pushpin p in layer.Children)
+            {
+
+                try { p.MouseDown -= ClickGreenButton; }
+                catch { }
+                try { p.MouseDown -= ClickRedButton; }
+                catch { }
+                try { p.MouseDown -= Handled; }
+                catch { }
+                Geocache geocache = geocaches
+                    .FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+
+                FoundGeocache foundGeocache = null;
+                if (geocache != null)
                 {
-                    try { p.MouseDown -= ClickGreenButton; }
-                    catch { }
-                    try { p.MouseDown -= ClickRedButton; }
-                    catch { }
-                    try { p.MouseDown -= Handled; }
-                    catch { }
-                    Geocache geocache = database.Geocache.
-                        FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
+                    foundGeocache = database.FoundGeocache
+                        .FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
+                }
 
-                    FoundGeocache foundGeocache = null;
-                    if (geocache != null)
-                    {
-                        foundGeocache = database.FoundGeocache.
-                            FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
-                    }
+                // If the pushpin represents a person, dabble with opacity
+                if (geocache == null && p.ToolTip.ToString() != tooptipp)
+                {
+                    UpdatePin(p, Colors.Blue, 0.5);
+                }
 
-                    // If the pushpin represents a person, dabble with opacity
-                    if (geocache == null && p.ToolTip.ToString() != tooptipp)
-                    {
-                        UpdatePin(p, Colors.Blue, 0.5);
-                    }
+                // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
+                else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
+                {
+                    UpdatePin(p, Colors.Black, 1);
+                    p.MouseDown += Handled;
+                }
 
-                    // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
-                    else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
-                    {
-                        UpdatePin(p, Colors.Black, 1);
-                        p.MouseDown += Handled;
-                    }
+                // A Geocache found by the current person. Should have clickevent.
+                else if (geocache != null && foundGeocache != null)
+                {
+                    UpdatePin(p, Colors.Green, 1);
+                    p.MouseDown += ClickGreenButton;
+                }
 
-                    // A Geocache found by the current person. Should have clickevent.
-                    else if (geocache != null && foundGeocache != null)
-                    {
-                        UpdatePin(p, Colors.Green, 1);
-                        p.MouseDown += ClickGreenButton;
-                    }
-
-                    // A geocache not found by the current person. Change color, clickevent too.
-                    else if (geocache != null && foundGeocache == null)
-                    {
-                        UpdatePin(p, Colors.Red, 1);
-                        p.MouseDown += ClickRedButton;
-                    }
+                // A geocache not found by the current person. Change color, clickevent too.
+                else if (geocache != null && foundGeocache == null)
+                {
+                    UpdatePin(p, Colors.Red, 1);
+                    p.MouseDown += ClickRedButton;
                 }
 
                 // Prevent click from being triggered on map.
                 e.Handled = true;
-            };
+            }
         }
         
         // TODO: Async operations on Read and Write.
-        private void OnAddGeocacheClick(object sender, RoutedEventArgs args)
+        // DONE
+        private async void OnAddGeocacheClick(object sender, RoutedEventArgs args)
         {
             if (currentPerson != null)
             {
@@ -368,8 +391,8 @@ namespace Geocaching
                     Person = currentPerson,
                 };
 
-                database.Add(geocache);
-                database.SaveChanges();
+                await database.AddAsync(geocache);
+                await database.SaveChangesAsync();
 
                 GeoCoordinate geo = new GeoCoordinate();
                 geo.Longitude = geocache.Longitude;
@@ -387,7 +410,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        private void OnAddPersonClick(object sender, RoutedEventArgs args)
+        // DONE 
+        private async void OnAddPersonClick(object sender, RoutedEventArgs args)
         {
             var dialog = new PersonDialog();
             dialog.Owner = this;
@@ -417,8 +441,8 @@ namespace Geocaching
                 Latitude = latestClickLocation.Latitude
             };
 
-            database.Add(person);
-            database.SaveChanges();
+            await database.AddAsync(person);
+            await database.SaveChangesAsync();
 
             GeoCoordinate geo = new GeoCoordinate();
             geo.Longitude = person.Longitude;
@@ -455,7 +479,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
+        // DONE
+        private async void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".txt";
@@ -469,11 +494,13 @@ namespace Geocaching
             string path = dialog.FileName;
             // Read the selected file here.
 
-            database.Person.RemoveRange(database.Person);
-            database.Geocache.RemoveRange(database.Geocache);
-            database.FoundGeocache.RemoveRange(database.FoundGeocache);
-            database.SaveChanges();
-
+            Task LoadToDatabase = Task.Run(() =>
+            {
+                database.Person.RemoveRange(database.Person);
+                database.Geocache.RemoveRange(database.Geocache);
+                database.FoundGeocache.RemoveRange(database.FoundGeocache);
+                database.SaveChanges();
+            });
 
             List<List<string>> collection = new List<List<string>>();
             List<string> linesWithObjects = new List<string>();
@@ -496,63 +523,105 @@ namespace Geocaching
             collection.Add(linesWithObjects);
 
             List<Person> people = new List<Person>();
-            Person p;
+            Person person;
             List<Geocache> geocaches = new List<Geocache>();
             Geocache geocache;
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
+            Dictionary<string[], Geocache> geoint = new Dictionary<string[], Geocache>();
 
-            for (int i = 0; i < collection.Count(); i++)
+            await Task.WhenAll(LoadToDatabase);
+
+            Task Loader = Task.Run(() =>
             {
-                // Because [i][0] always contains the person object in our instance.
-                string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
-                p = new Person
-                {
-                    FirstName = values[0],
-                    LastName = values[1],
-                    Country = values[2],
-                    City = values[3],
-                    StreetName = values[4],
-                    StreetNumber = byte.Parse(values[5]),
-                    Latitude = double.Parse(values[6]),
-                    Longitude = double.Parse(values[7]),
-                };
-                people.Add(p);
 
-                for (int k = 1; k < collection[i].Count(); k++)
+                for (int i = 0; i < collection.Count(); i++)
                 {
-                    try
+                    // Because [i][0] always contains the person object in our instance.
+                    string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
+
+                    person = new Person
                     {
-                        string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
-                        geocache = new Geocache
+                        FirstName = values[0],
+                        LastName = values[1],
+                        Country = values[2],
+                        City = values[3],
+                        StreetName = values[4],
+                        StreetNumber = byte.Parse(values[5]),
+                        Latitude = double.Parse(values[6]),
+                        Longitude = double.Parse(values[7]),
+                    };
+                    people.Add(person);
+                    database.Add(person);
+
+                    for (int k = 1; k < collection[i].Count(); k++)
+                    {
+                        try
                         {
-                            // Because tmp[0] is the GeocacheId
-                            Latitude = double.Parse(tmp[1]),
-                            Longitude = double.Parse(tmp[2]),
-                            Content = tmp[3],
-                            Message = tmp[4],
-                            Person = p,
-                        };
-                        geocaches.Add(geocache);
-                        database.Add(p);
-                        database.Add(geocache);
-                    }
-                    // When we can't split a line into a geocache object, we know that we have struck the last line.
-                    // This means that the current line is an ex. "Found: n, n, n" line.
-                    catch
-                    {
-                        // Do 190km/h until we cant anymore, thus we "know" that we have found found...
-                        string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
-                        pairs.Add(numbers, p);
+
+                            string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
+                            geocache = new Geocache
+                            {
+                                // Because tmp[0] is the GeocacheId
+                                Latitude = double.Parse(tmp[1]),
+                                Longitude = double.Parse(tmp[2]),
+                                Content = tmp[3],
+                                Message = tmp[4],
+                                Person = person,
+                            };
+                            geocaches.Add(geocache);
+                            database.Add(geocache);
+
+
+                            string[] foo = collection[i][collection[i].Count()].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+
+                            geoint.Add(foo, geocache);
+                        }
+                        // When we can't split a line into a geocache object, we know that we have struck the last line.
+                        // This means that the current line is an ex. "Found: n, n, n" line.
+                        catch
+                        {
+                            // Do 190km/h until we cant anymore, thus we "know" that we have found found...
+                            string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
+                            pairs.Add(numbers, person);
+                        }
                     }
                 }
-            }
-            pairs.Select(pair => pair).ToList()
-                .ForEach(entry => 
-                    entry.Key.Select(k => k).ToList().ForEach(key => 
-                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
-                ));
+                database.SaveChanges();
+            });
+            await Task.WhenAll(Loader);
 
-            database.SaveChanges();
+            //Dictionary<Person, int[]> FoundBy = new Dictionary<Person, int[]>();
+
+            //foreach (KeyValuePair<string[], Person> pair in pairs)
+            //{
+            //    int[] tmp = new int[pair.Key.Length];
+            //    int n = 0;
+            //    foreach (string key in pair.Key)
+            //    {
+            //        tmp[n] = geoint.First(g => g.Key == int.Parse(key)).Value.GeocacheId;
+            //        n++;
+            //    }  
+            //    FoundBy.Add(pair.Value, tmp);
+            //}
+
+
+
+            Geocache[] gs = database.Geocache.ToArray();
+
+            //foreach (KeyValuePair<string[], Person> item in pairs)
+            //{
+            //    foreach (string thing in item.Key)
+            //    {
+            //        geoint.FirstOrDefault(g => g.Key.ToList().ForEach(z => database.Add(new FoundGeocache { Person = item.Value, Geocache = geoint.FirstOrDefault(t => int.Parse(z) == int.Parse(thing)).Value })));
+            //    }
+            //}
+            
+            //pairs.ToList()
+            //    .ForEach(entry => entry.Key.ToList()
+            //        .ForEach(key => database.Add(new FoundGeocache { Person = entry.Value, Geocache = geoint.FirstOrDefault(g => g.Key.ToList().ForEach(x => int.Parse(x) == int.Parse(key)).Value })
+            //));
+
+            await database.SaveChangesAsync();
 
             // The same as the one above
             //foreach (KeyValuePair<string[], Person> item in pairs)
@@ -560,6 +629,7 @@ namespace Geocaching
             //    item.Key.Select(t => t).ToList()
             //        .ForEach(t => database.Add(new FoundGeocache { Person = item.Value, Geocache = geocaches[(int.Parse(t) - 1)] }));
             //}
+            CreateMap();
         }
 
         // TODO: Fix the async Tasks.
@@ -577,7 +647,6 @@ namespace Geocaching
 
             string path = dialog.FileName;
             // Write to the selected file here.
-
 
             List<string> lines = new List<string>();
 
@@ -609,6 +678,7 @@ namespace Geocaching
             });
             Task.WaitAll(readToFile);
             File.WriteAllLines(path, lines);
+            CreateMap();
         }
 
         private void SaveAndExit(object sender, RoutedEventArgs args)
