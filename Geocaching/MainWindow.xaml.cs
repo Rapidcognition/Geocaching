@@ -70,9 +70,6 @@ namespace Geocaching
         public string StreetName { get; set; }
         public byte StreetNumber { get; set; }
 
-        // ??????
-        //public ICollection<Geocache> Geocache { get; set; }
-
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
 
         // Helper function to build strings that suit format of the textfile.
@@ -514,7 +511,7 @@ namespace Geocaching
                     }
                     // When we can't split a line into a geocache object, we know that we have struck the last line.
                     // This means that the current line is an ex. "Found: n, n, n" line.
-                    catch
+                    finally
                     {
                         // Do 190km/h until we cant anymore, thus we "know" that we have found found...
                         string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
