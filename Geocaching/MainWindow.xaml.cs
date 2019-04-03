@@ -191,7 +191,19 @@ namespace Geocaching
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
                     currentPerson = null;
-                    UpdateMap();
+                    foreach (Pushpin pin in layer.Children)
+                    {
+                        try
+                        {
+                            Geocache geocache = (Geocache)pin.Tag;
+                            UpdatePin(pin, Colors.Gray, 1);
+                        }
+                        catch
+                        {
+                            Person person = (Person)pin.Tag;
+                            UpdatePin(pin, Colors.Blue, 1);
+                        }
+                    }
                 }
             };
 
