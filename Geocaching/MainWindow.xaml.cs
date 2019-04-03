@@ -524,7 +524,6 @@ namespace Geocaching
             List<Geocache> geocaches = new List<Geocache>();
             Geocache geocache;
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
-            Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
 
                 for (int i = 0; i < collection.Count(); i++)
                 {
@@ -560,7 +559,6 @@ namespace Geocaching
                             Person = p,
                         };
                         geocaches.Add(geocache);
-                        geopairs.Add(int.Parse(tmp[0]), geocache);
                         database.Add(p);
                         database.Add(geocache);
                     }
@@ -570,17 +568,14 @@ namespace Geocaching
                     {
                         // Do 190km/h until we cant anymore, thus we "know" that we have found found...
                         string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
-                        if(!numbers.Contains("")) pairs.Add(numbers, p);
+                        pairs.Add(numbers, p);
                     }
                 }
             }
-
-            Geocache gz = geopairs.FirstOrDefault(g => g.Key == int.Parse("65")).Value;
-
             pairs.Select(pair => pair).ToList()
                 .ForEach(entry => 
                     entry.Key.Select(k => k).ToList().ForEach(key => 
-                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
+                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
                 ));
 
             await database.SaveChangesAsync();
