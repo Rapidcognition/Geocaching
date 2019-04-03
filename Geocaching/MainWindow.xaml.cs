@@ -173,6 +173,7 @@ namespace Geocaching
             CreateMap();
         }
 
+        // TODO: Async operations on Read and Write.
         private void CreateMap()
         {
             map.CredentialsProvider = new ApplicationIdCredentialsProvider(applicationId);
