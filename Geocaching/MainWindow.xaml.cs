@@ -178,42 +178,17 @@ namespace Geocaching
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
                     currentPerson = null;
-                    UpdateMap();
+                    CreateMap();
                 }
             };
 
-            UpdateMap();
-
-            map.ContextMenu = new ContextMenu();
-
-            var addPersonMenuItem = new MenuItem { Header = "Add Person" };
-            map.ContextMenu.Items.Add(addPersonMenuItem);
-            addPersonMenuItem.Click += OnAddPersonClick;
-
-            var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
-            map.ContextMenu.Items.Add(addGeocacheMenuItem);
-            addGeocacheMenuItem.Click += OnAddGeocacheClick;
-        }
-
-        private void UpdateMap()
-        {
-            foreach(Pushpin p in layer.Children)
+            foreach (Geocache g in database.Geocache.Include(g => g.Person))
             {
-                RemoveLogicalChild(p);
-            }
-            // Put all the pins on the map and make click events on them. 
-            if (currentPerson == null)
-            {
-                foreach (Geocache g in database.Geocache.Include(g => g.Person))
-                {
-                    geo = new GeoCoordinate();
-                    geo.Longitude = g.Longitude;
-                    geo.Latitude = g.Latitude;
-                    // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
-                    string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
-                    var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
-                    // koordinater, meddelande, innehåll och vilken person som har placerat den.
-                }
+                geo = new GeoCoordinate();
+                geo.Longitude = g.Longitude;
+                geo.Latitude = g.Latitude;
+                string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
+                var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
             }
 
             foreach (Person person in database.Person)
@@ -252,31 +227,39 @@ namespace Geocaching
                         }
 
                         // Otherwise the pushpin is a geocache. In this case the geocache is put there by the current person. So it should become black.
-                        else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
+                        else if (geocache != null && geocache.PersonId == person.PersonId)
                         {
                             UpdatePin(p, Colors.Black, 1);
                             p.MouseDown += Handled;
                         }
 
-                        // A Geocache found by the current person. Should have clickevent.
+                        // A Geocache found by the current person.
                         else if (geocache != null && foundGeocache != null)
                         {
                             UpdatePin(p, Colors.Green, 1);
                             p.MouseDown += ClickGreenButton;
                         }
 
-                        // A geocache not found by the current person. Change color, clickevent too.
+                        // A geocache not found by the current person.
                         else if (geocache != null && foundGeocache == null)
                         {
                             UpdatePin(p, Colors.Red, 1);
                             p.MouseDown += ClickRedButton;
                         }
                     }
-                    
-                    // Prevent click from being triggered on map.
                     a.Handled = true;
                 };
             }
+
+            map.ContextMenu = new ContextMenu();
+
+            var addPersonMenuItem = new MenuItem { Header = "Add Person" };
+            map.ContextMenu.Items.Add(addPersonMenuItem);
+            addPersonMenuItem.Click += OnAddPersonClick;
+
+            var addGeocacheMenuItem = new MenuItem { Header = "Add Geocache" };
+            map.ContextMenu.Items.Add(addGeocacheMenuItem);
+            addGeocacheMenuItem.Click += OnAddGeocacheClick;
         }
 
         private void ClickGreenButton(object sender, MouseButtonEventArgs e)
@@ -330,9 +313,7 @@ namespace Geocaching
 
                 string contents = dialog.GeocacheContents;
                 string message = dialog.GeocacheMessage;
-                // Add geocache to map and database here.
 
-                // Add to database
                 Geocache geocache = new Geocache
                 {
                     Content = contents,
@@ -348,7 +329,7 @@ namespace Geocaching
                     .FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude 
                     && p.Latitude == latestClickLocation.Latitude);
 
-                UpdateMap();
+                CreateMap();
             }
             else
             {
@@ -373,7 +354,6 @@ namespace Geocaching
             string streetName = dialog.AddressStreetName;
             byte streetNumber = dialog.AddressStreetNumber;
 
-            // Add to database
             Person person = new Person
             {
                 FirstName = firstName,
@@ -389,7 +369,7 @@ namespace Geocaching
             database.SaveChanges();
 
             currentPerson = database.Person.FirstOrDefault(p => p.Longitude == latestClickLocation.Longitude && p.Latitude == latestClickLocation.Latitude);
-            UpdateMap();
+            CreateMap();
         }
 
         private Pushpin AddPin(GeoCoordinate geo, string tooltip, Color color, double opacity, object o)
@@ -425,7 +405,6 @@ namespace Geocaching
             }
 
             string path = dialog.FileName;
-            // Read the selected file here.
 
             database.Person.RemoveRange(database.Person);
             database.Geocache.RemoveRange(database.Geocache);
@@ -532,8 +511,6 @@ namespace Geocaching
             }
 
             string path = dialog.FileName;
-            // Write to the selected file here.
-
 
             List<string> lines = new List<string>();
 
