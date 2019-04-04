@@ -134,8 +134,6 @@ namespace Geocaching
 
     public partial class MainWindow : Window
     {
-        // Contains the ID string needed to use the Bing map.
-        // Instructions here: https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key
         private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
 
         private MapLayer layer;
@@ -146,8 +144,6 @@ namespace Geocaching
 
         private GeoCoordinate geo;
 
-        // Contains the location of the latest click on the map.
-        // The Location object in turn contains information like longitude and latitude.
         private GeoCoordinate latestClickLocation;
 
         private AppDbContext database = new AppDbContext();
@@ -417,7 +413,6 @@ namespace Geocaching
             pin.Opacity = opacity;
         }
 
-        // Spara allt i textfilen till databasen.
         private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
@@ -524,7 +519,6 @@ namespace Geocaching
             database.SaveChanges();
         }
 
-        // Hämta allt från databasen och spara i textfilen.
         private void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.SaveFileDialog();
