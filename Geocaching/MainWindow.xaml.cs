@@ -235,10 +235,10 @@ namespace Geocaching
 
                     foreach (Pushpin p in layer.Children)
                     {
-                        try { p.MouseDown -= ClickGreenButton; }
-                        catch { }
-                        try { p.MouseDown -= ClickRedButton; }
-                        catch { }
+                        p.MouseDown -= ClickGreenButton;
+                        p.MouseDown -= ClickRedButton;
+                        p.MouseDown -= Handled;
+
                         Geocache geocache = database.Geocache
                             .FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
 
@@ -259,7 +259,7 @@ namespace Geocaching
                         else if (geocache != null && geocache.PersonId == person.PersonId) // Är default null?
                         {
                             UpdatePin(p, Colors.Black, 1);
-                            p.MouseDown += (t, b) => { b.Handled = true; };
+                            p.MouseDown += Handled;
                         }
 
                         // A Geocache found by the current person. Should have clickevent.
@@ -312,6 +312,11 @@ namespace Geocaching
             UpdatePin(pin, Colors.Green, 1);
             pin.MouseDown -= ClickRedButton;
             pin.MouseDown += ClickGreenButton;
+            e.Handled = true;
+        }
+
+        private void Handled(object sender, MouseButtonEventArgs e)
+        {
             e.Handled = true;
         }
 
