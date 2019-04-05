@@ -524,8 +524,10 @@ namespace Geocaching
             List<Geocache> geocaches = new List<Geocache>();
             Geocache geocache;
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
+            Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
 
-                for (int i = 0; i < collection.Count(); i++)
+
+            for (int i = 0; i < collection.Count(); i++)
                 {
                     // Because [i][0] always contains the person object in our instance.
                     string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
@@ -556,10 +558,11 @@ namespace Geocaching
                             Longitude = double.Parse(tmp[2]),
                             Content = tmp[3],
                             Message = tmp[4],
-                            Person = p,
+                            Person = person,
                         };
                         geocaches.Add(geocache);
-                        database.Add(p);
+                        geopairs.Add(int.Parse(tmp[0]), geocache);
+                        database.Add(person);
                         database.Add(geocache);
                     }
                     // When we can't split a line into a geocache object, we know that we have struck the last line.
@@ -568,14 +571,15 @@ namespace Geocaching
                     {
                         // Do 190km/h until we cant anymore, thus we "know" that we have found found...
                         string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
-                        pairs.Add(numbers, p);
+                        if (!numbers.Contains("")) pairs.Add(numbers, person);
                     }
                 }
             }
+
             pairs.Select(pair => pair).ToList()
-                .ForEach(entry => 
-                    entry.Key.Select(k => k).ToList().ForEach(key => 
-                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geocaches[(int.Parse(key) - 1)] })
+                .ForEach(entry =>
+                    entry.Key.Select(k => k).ToList().ForEach(key =>
+                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
                 ));
 
             await database.SaveChangesAsync();
