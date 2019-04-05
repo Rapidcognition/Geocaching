@@ -253,6 +253,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // DONE
+        // Bug = "geocache" already has an ID but the database generates it's own id's.
         private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -271,6 +272,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // DONE
+        // Bug = "geocache" already has an ID but the database generates it's own id's.
         private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -278,10 +280,10 @@ namespace Geocaching
             FoundGeocache foundGeocache = new FoundGeocache
             {
                 Person = currentPerson,
-                Geocache = geocache
+                Geocache = geocache,
             };
-            await database.AddAsync(foundGeocache);
-            await database.SaveChangesAsync();
+            database.Add(foundGeocache);
+            database.SaveChanges();
             UpdatePin(pin, Colors.Green, 1);
             pin.MouseDown += ClickGreenButton;
             pin.MouseDown -= ClickRedButton;
@@ -477,7 +479,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // DONE
-        private async void OnLoadFromFileClick(object sender, RoutedEventArgs args)
+        private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".txt";
@@ -502,6 +504,15 @@ namespace Geocaching
             List<List<string>> collection = new List<List<string>>();
             List<string> linesWithObjects = new List<string>();
 
+            List<Person> people = new List<Person>();
+            Person person;
+            List<Geocache> geocaches = new List<Geocache>();
+            Geocache geocache;
+            Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
+            Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
+
+            Task.WaitAll(LoadToDatabase);
+
             string[] lines = File.ReadAllLines(path).ToArray();
 
             foreach (var line in lines)
@@ -519,32 +530,24 @@ namespace Geocaching
             }
             collection.Add(linesWithObjects);
 
-            List<Person> people = new List<Person>();
-            Person person;
-            List<Geocache> geocaches = new List<Geocache>();
-            Geocache geocache;
-            Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
-            Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
-
-
             for (int i = 0; i < collection.Count(); i++)
-                {
-                    // Because [i][0] always contains the person object in our instance.
-                    string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
+            {
+                // Because [i][0] always contains the person object in our instance.
+                string[] values = collection[i][0].Split('|').Select(v => v.Trim()).ToArray();
 
-                    person = new Person
-                    {
-                        FirstName = values[0],
-                        LastName = values[1],
-                        Country = values[2],
-                        City = values[3],
-                        StreetName = values[4],
-                        StreetNumber = byte.Parse(values[5]),
-                        Latitude = double.Parse(values[6]),
-                        Longitude = double.Parse(values[7]),
-                    };
-                    people.Add(person);
-                    database.Add(person);
+                person = new Person
+                {
+                    FirstName = values[0],
+                    LastName = values[1],
+                    Country = values[2],
+                    City = values[3],
+                    StreetName = values[4],
+                    StreetNumber = byte.Parse(values[5]),
+                    Latitude = double.Parse(values[6]),
+                    Longitude = double.Parse(values[7]),
+                };
+                people.Add(person);
+                database.Add(person);
 
                 for (int k = 1; k < collection[i].Count(); k++)
                 {
@@ -582,7 +585,7 @@ namespace Geocaching
                         database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
                 ));
 
-            await database.SaveChangesAsync();
+            database.SaveChanges();
 
             // The same as the one above
             //foreach (KeyValuePair<string[], Person> item in pairs)
