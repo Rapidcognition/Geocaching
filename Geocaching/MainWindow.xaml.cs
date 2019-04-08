@@ -261,8 +261,8 @@ namespace Geocaching
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
 
-            FoundGeocache foundGeocache = database.FoundGeocache.
-                FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+            FoundGeocache foundGeocache = database.FoundGeocache
+                .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
 
             database.Remove(foundGeocache);
             database.SaveChanges();
@@ -284,8 +284,13 @@ namespace Geocaching
                 Person = currentPerson,
                 Geocache = geocache,
             };
-            database.Add(foundGeocache);
-            database.SaveChanges();
+            var task = Task.Run(() =>
+            {
+                database.Add(foundGeocache);
+                database.SaveChanges();
+            });
+            Task.WaitAll(task);
+
             UpdatePin(pin, Colors.Green, 1);
             pin.MouseDown += ClickGreenButton;
             pin.MouseDown -= ClickRedButton;
@@ -301,20 +306,19 @@ namespace Geocaching
         // DONE maybe ??
         private void PersonClick(object sender, MouseButtonEventArgs e)
         {
+            Geocache[] geocaches = null;
+            var geocachez = Task.Run(() =>
+            {
+                geocaches = database.Geocache.Select(a => a).ToArray();
+            });
+
             Pushpin pin = (Pushpin)sender;
             Person person = (Person)pin.Tag;
             string tooptipp = pin.ToolTip.ToString();
             currentPerson = person;
             UpdatePin(pin, Colors.Blue, 1);
 
-
-            // When this is done async, currentPerson is set to null.
-            //Geocache[] geocaches = await Task.Run(() =>
-            //{
-            //    return database.Geocache.Select(a => a).ToArray();
-            //});
-
-            Geocache[] geocaches = database.Geocache.Select(a => a).ToArray();
+            Task.WaitAll(geocachez);
 
             foreach (Pushpin p in layer.Children)
             {
@@ -325,6 +329,7 @@ namespace Geocaching
                 catch { }
                 try { p.MouseDown -= Handled; }
                 catch { }
+
                 Geocache geocache = geocaches
                     .FirstOrDefault(g => g.Longitude == p.Location.Longitude && g.Latitude == p.Location.Latitude);
 
