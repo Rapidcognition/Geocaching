@@ -36,8 +36,8 @@ namespace Geocaching
 
         protected override void OnModelCreating(ModelBuilder model)
         {
-            model.Entity<FoundGeocache>()
-                .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
+            //model.Entity<FoundGeocache>()
+            //    .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Person)
@@ -109,6 +109,9 @@ namespace Geocaching
 
     public class FoundGeocache
     {
+        [Key]
+        public int FoundGeocacheId { get; set; }
+
         [ForeignKey("PersonId")]
         public int PersonId { get; set; }
         public Person Person { get; set; }
@@ -252,9 +255,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        // DONE
         // Bug = "geocache" already has an ID but the database generates it's own id's.
-        private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
+        private void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
@@ -263,7 +265,7 @@ namespace Geocaching
                 FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
 
             database.Remove(foundGeocache);
-            await database.SaveChangesAsync();
+            database.SaveChanges();
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
             pin.MouseDown -= ClickGreenButton;
@@ -271,12 +273,12 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        // DONE
         // Bug = "geocache" already has an ID but the database generates it's own id's.
-        private async void ClickRedButton(object sender, MouseButtonEventArgs e)
+        private void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
+
             FoundGeocache foundGeocache = new FoundGeocache
             {
                 Person = currentPerson,
@@ -296,8 +298,8 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        // DONE
-        private async void PersonClick(object sender, MouseButtonEventArgs e)
+        // DONE maybe ??
+        private void PersonClick(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Person person = (Person)pin.Tag;
@@ -306,10 +308,13 @@ namespace Geocaching
             UpdatePin(pin, Colors.Blue, 1);
 
 
-            Geocache[] geocaches = await Task.Run(() =>
-            {
-                return database.Geocache.Select(a => a).ToArray();
-            });
+            // When this is done async, currentPerson is set to null.
+            //Geocache[] geocaches = await Task.Run(() =>
+            //{
+            //    return database.Geocache.Select(a => a).ToArray();
+            //});
+
+            Geocache[] geocaches = database.Geocache.Select(a => a).ToArray();
 
             foreach (Pushpin p in layer.Children)
             {
