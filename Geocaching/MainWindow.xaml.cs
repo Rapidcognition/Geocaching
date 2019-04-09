@@ -256,7 +256,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // Bug = "geocache" already has an ID but the database generates it's own id's.
-        private void ClickGreenButton(object sender, MouseButtonEventArgs e)
+        private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
@@ -269,7 +269,7 @@ namespace Geocaching
                 database.Remove(foundGeocache);
                 database.SaveChanges();
             });
-            Task.WaitAll(task);
+            await Task.WhenAll(task);
 
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
