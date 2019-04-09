@@ -36,8 +36,8 @@ namespace Geocaching
 
         protected override void OnModelCreating(ModelBuilder model)
         {
-            //model.Entity<FoundGeocache>()
-            //    .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
+            model.Entity<FoundGeocache>()
+                .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
 
             model.Entity<FoundGeocache>()
                 .HasOne(fg => fg.Person)
@@ -109,9 +109,6 @@ namespace Geocaching
 
     public class FoundGeocache
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int FoundGeocacheId { get; set; }
-
         [ForeignKey("PersonId")]
         public int PersonId { get; set; }
         public Person Person { get; set; }
@@ -272,6 +269,7 @@ namespace Geocaching
                 return database.FoundGeocache
                     .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
             });
+
             var task = Task.Run(() =>
             {
                 database.Remove(foundGeocache);

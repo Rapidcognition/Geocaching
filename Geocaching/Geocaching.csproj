@@ -198,6 +198,10 @@
     <Compile Include="Migrations\20190408104806_Something.designer.cs">
       <DependentUpon>20190408104806_Something.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\20190409091906_Third333.cs" />
+    <Compile Include="Migrations\20190409091906_Third333.designer.cs">
+      <DependentUpon>20190409091906_Third333.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\AppDbContextModelSnapshot.cs" />
     <Compile Include="PersonDialog.xaml.cs">
       <DependentUpon>PersonDialog.xaml</DependentUpon>
