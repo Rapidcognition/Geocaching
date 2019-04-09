@@ -213,10 +213,13 @@ namespace Geocaching
                 }
             };
 
-            var people = await Task.Run( () =>
+            Person[] people = null;
+            var getPeople = Task.Run(() =>
             {
-                return database.Person.ToArray();
+                people = database.Person.ToArray();
             });
+
+            await Task.WhenAll(getPeople);
             foreach (Person person in people)
             {
                 geo = new GeoCoordinate();
@@ -228,10 +231,14 @@ namespace Geocaching
                 pin.MouseDown += PersonClick;
             }
 
-            var geocaches = await Task.Run(() =>
+            Geocache[] geocaches = null;
+            var getGeocache = Task.Run(() =>
             {
-                return database.Geocache.Include(g => g.Person);
+                geocaches = database.Geocache.Include(g => g.Person).ToArray();
             });
+
+            await Task.WhenAll(getGeocache);
+
             foreach (Geocache g in geocaches)
             {
                 geo = new GeoCoordinate();
@@ -255,7 +262,6 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        // Bug = "geocache" already has an ID but the database generates it's own id's.
         private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -266,10 +272,13 @@ namespace Geocaching
                 return database.FoundGeocache
                     .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
             });
-                
+            var task = Task.Run(() =>
+            {
+                database.Remove(foundGeocache);
+                database.SaveChanges();
+            });
 
-            database.Remove(foundGeocache);
-            database.SaveChanges();
+            await Task.WhenAll(task);
 
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
@@ -278,7 +287,6 @@ namespace Geocaching
         }
 
         // TODO: Async operations on Read and Write.
-        // Bug = "geocache" already has an ID but the database generates it's own id's.
         private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
@@ -294,6 +302,7 @@ namespace Geocaching
                 database.Add(foundGeocache);
                 database.SaveChanges();
             });
+
             await Task.WhenAll(task);
 
             UpdatePin(pin, Colors.Green, 1);
@@ -309,21 +318,21 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // DONE maybe ??
-        private void PersonClick(object sender, MouseButtonEventArgs e)
+        private async void PersonClick(object sender, MouseButtonEventArgs e)
         {
-
             Geocache[] geocaches = null;
             var geocachez = Task.Run(() =>
             {
                 geocaches = database.Geocache.Select(a => a).ToArray();
             });
+
             Pushpin pin = (Pushpin)sender;
             Person person = (Person)pin.Tag;
             string tooptipp = pin.ToolTip.ToString();
             currentPerson = person;
             UpdatePin(pin, Colors.Blue, 1);
 
-            Task.WaitAll(geocachez);
+            await Task.WhenAll(geocachez);
 
             foreach (Pushpin p in layer.Children)
             {
@@ -341,8 +350,11 @@ namespace Geocaching
                 FoundGeocache foundGeocache = null;
                 if (geocache != null)
                 {
-                    foundGeocache = database.FoundGeocache
-                        .FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
+                    foundGeocache = await Task.Run(() => 
+                    {
+                        return database.FoundGeocache
+                           .FirstOrDefault(fg => fg.GeocacheId == geocache.GeocacheId && fg.PersonId == person.PersonId);
+                    });
                 }
 
                 // If the pushpin represents a person, dabble with opacity
@@ -405,9 +417,13 @@ namespace Geocaching
                     Person = currentPerson,
                 };
 
-                await database.AddAsync(geocache);
-                await database.SaveChangesAsync();
+                var addGeocache = Task.Run(() =>
+                {
+                    database.Add(geocache);
+                    database.SaveChanges();
+                });
 
+                await Task.WhenAll(addGeocache);
                 GeoCoordinate geo = new GeoCoordinate();
                 geo.Longitude = geocache.Longitude;
                 geo.Latitude = geocache.Latitude;
@@ -455,8 +471,13 @@ namespace Geocaching
                 Latitude = latestClickLocation.Latitude
             };
 
-            await database.AddAsync(person);
-            await database.SaveChangesAsync();
+            var addPerson = Task.Run(() =>
+            {
+                database.Add(person);
+                database.SaveChanges();
+            });
+
+            await Task.WhenAll(addPerson);
 
             GeoCoordinate geo = new GeoCoordinate();
             geo.Longitude = person.Longitude;
@@ -494,7 +515,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // DONE
-        private void OnLoadFromFileClick(object sender, RoutedEventArgs args)
+        private async void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".txt";
@@ -508,14 +529,12 @@ namespace Geocaching
             string path = dialog.FileName;
             // Read the selected file here.
 
-            string[] lines = null;
             Task LoadToDatabase = Task.Run(() =>
             {
                 database.Person.RemoveRange(database.Person);
                 database.Geocache.RemoveRange(database.Geocache);
                 database.FoundGeocache.RemoveRange(database.FoundGeocache);
                 database.SaveChanges();
-                lines = File.ReadAllLines(path).ToArray();
             });
 
             List<List<string>> collection = new List<List<string>>();
@@ -525,10 +544,14 @@ namespace Geocaching
             Person person;
             List<Geocache> geocaches = new List<Geocache>();
             Geocache geocache;
+
             Dictionary<string[], Person> pairs = new Dictionary<string[], Person>();
             Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
 
+            string[] lines = File.ReadAllLines(path).ToArray();
+
             Task.WaitAll(LoadToDatabase);
+
             foreach (var line in lines)
             {
                 if(line != "")
@@ -577,10 +600,15 @@ namespace Geocaching
                             Message = tmp[4],
                             Person = person,
                         };
-                        geocaches.Add(geocache);
                         geopairs.Add(int.Parse(tmp[0]), geocache);
-                        database.Add(person);
-                        database.Add(geocache);
+
+                        var task = Task.Run(() =>
+                        {
+                            geocaches.Add(geocache);
+                            database.Add(person);
+                            database.Add(geocache);
+                        });
+                        await Task.WhenAll(task);
                     }
                     // When we can't split a line into a geocache object, we know that we have struck the last line.
                     // This means that the current line is an ex. "Found: n, n, n" line.
@@ -593,25 +621,30 @@ namespace Geocaching
                 }
             }
 
-            pairs.Select(pair => pair).ToList()
-                .ForEach(entry =>
-                    entry.Key.Select(k => k).ToList().ForEach(key =>
-                        database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
-                ));
+            var finalTask = Task.Run(() =>
+            {
+                pairs.Select(pair => pair).ToList()
+                    .ForEach(entry =>
+                        entry.Key.Select(k => k).ToList().ForEach(key =>
+                            database.Add(new FoundGeocache { Person = entry.Value, Geocache = geopairs.FirstOrDefault(g => g.Key == (int.Parse(key))).Value })
+                    ));
 
-            database.SaveChanges();
+                // The same as the one above
+                //foreach (KeyValuePair<string[], Person> item in pairs)
+                //{
+                //    item.Key.Select(t => t).ToList()
+                //        .ForEach(t => database.Add(new FoundGeocache { Person = item.Value, Geocache = geocaches[(int.Parse(t) - 1)] }));
+                //}
 
-            // The same as the one above
-            //foreach (KeyValuePair<string[], Person> item in pairs)
-            //{
-            //    item.Key.Select(t => t).ToList()
-            //        .ForEach(t => database.Add(new FoundGeocache { Person = item.Value, Geocache = geocaches[(int.Parse(t) - 1)] }));
-            //}
+                database.SaveChanges();
+            });
+
+            await Task.WhenAll(finalTask);
             CreateMap();
         }
 
         // TODO: Fix the async Tasks.
-        private void OnSaveToFileClick(object sender, RoutedEventArgs args)
+        private async void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.SaveFileDialog();
             dialog.DefaultExt = ".txt";
@@ -628,9 +661,8 @@ namespace Geocaching
 
             List<string> lines = new List<string>();
 
-            readToFile = Task.Run(async () =>
+            var readToFile = Task.Run(() =>
             {
-                await Task.WhenAll();
                 Person[] people = database.Person.Select(p => p).OrderByDescending(a => a).ToArray();
                 lock(myLock)
                 {
@@ -654,7 +686,7 @@ namespace Geocaching
                 }
                 lines.RemoveAt(lines.Count()-1);
             });
-            Task.WaitAll(readToFile);
+            await Task.WhenAll(readToFile);
             File.WriteAllLines(path, lines);
             CreateMap();
         }
