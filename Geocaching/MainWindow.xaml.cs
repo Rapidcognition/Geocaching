@@ -655,9 +655,11 @@ namespace Geocaching
             CreateMap();
         }
 
-        private void SaveAndExit(object sender, RoutedEventArgs args)
+        private async void SaveAndExit(object sender, RoutedEventArgs args)
         {
-            MessageBox.Show("Nothing here yet");
+            await database.SaveChangesAsync();
+            MessageBox.Show("All changes are now saved to the database. See you another time!");
+            Environment.Exit(0);
         }
     }
 }
