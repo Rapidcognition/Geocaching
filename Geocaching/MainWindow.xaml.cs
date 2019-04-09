@@ -326,13 +326,14 @@ namespace Geocaching
                 geocaches = database.Geocache.Select(a => a).ToArray();
             });
 
+            await Task.WhenAll(geocachez);
+
             Pushpin pin = (Pushpin)sender;
             Person person = (Person)pin.Tag;
             string tooptipp = pin.ToolTip.ToString();
             currentPerson = person;
             UpdatePin(pin, Colors.Blue, 1);
 
-            await Task.WhenAll(geocachez);
 
             foreach (Pushpin p in layer.Children)
             {
@@ -688,7 +689,6 @@ namespace Geocaching
             });
             await Task.WhenAll(readToFile);
             File.WriteAllLines(path, lines);
-            CreateMap();
         }
 
         private async void SaveAndExit(object sender, RoutedEventArgs args)
