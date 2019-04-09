@@ -117,13 +117,13 @@ namespace Geocaching
         public int GeocacheId { get; set; }
         public Geocache Geocache { get; set; }
 
-        public static string BuildFoundString(FoundGeocache[] foundcaches)
+        public static string BuildFoundString(List<FoundGeocache> foundcaches)
         {
             string stringBuilder = "Found: ";
-            for (int i = 0; i < foundcaches.Length; i++)
+            for (int i = 0; i < foundcaches.Count; i++)
             {
                 stringBuilder += foundcaches[i].GeocacheId;
-                if (i < foundcaches.Length - 1)
+                if (i < foundcaches.Count - 1)
                 {
                     stringBuilder += ", ";
                 }
@@ -155,8 +155,6 @@ namespace Geocaching
         // For the lock when doing an async operation.
         Object myLock = new Object();
 
-        private Task readToFile;
-
         public MainWindow()
         {
             latestClickLocation = gothenburg;
@@ -170,8 +168,6 @@ namespace Geocaching
             CreateMap();
         }
 
-        // TODO: Async operations on Read and Write.
-        // DONE
         private async void CreateMap()
         {
             try
@@ -266,7 +262,6 @@ namespace Geocaching
             addGeocacheMenuItem.Click += OnAddGeocacheClick;
         }
 
-        // TODO: Async operations on Read and Write.
         private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
@@ -293,7 +288,6 @@ namespace Geocaching
             e.Handled = true;
         }
 
-        // TODO: Async operations on Read and Write.
         private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
@@ -325,8 +319,6 @@ namespace Geocaching
              e.Handled = true;
         }
 
-        // TODO: Async operations on Read and Write.
-        // DONE maybe ??
         private async void PersonClick(object sender, MouseButtonEventArgs e)
         {
             Geocache[] geocaches = null;
@@ -399,8 +391,6 @@ namespace Geocaching
             }
         }
 
-        // TODO: Async operations on Read and Write.
-        // DONE
         private async void OnAddGeocacheClick(object sender, RoutedEventArgs args)
         {
             if (currentPerson != null)
@@ -449,8 +439,6 @@ namespace Geocaching
             }
         }
 
-        // TODO: Async operations on Read and Write.
-        // DONE 
         private async void OnAddPersonClick(object sender, RoutedEventArgs args)
         {
             var dialog = new PersonDialog();
@@ -523,8 +511,6 @@ namespace Geocaching
             pin.Opacity = opacity;
         }
 
-        // TODO: Async operations on Read and Write.
-        // DONE
         private async void OnLoadFromFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
@@ -620,11 +606,10 @@ namespace Geocaching
                         });
                         await Task.WhenAll(task);
                     }
-                    // When we can't split a line into a geocache object, we know that we have struck the last line.
-                    // This means that the current line is an ex. "Found: n, n, n" line.
+                    // If we can't create a geocache object from current line, we know that the line "contains" FoundGeocaches,
+                    // and we will end up in this catch statement.
                     catch
                     {
-                        // Do 190km/h until we cant anymore, thus we "know" that we have found found...
                         string[] numbers = collection[i][k].Remove(0, 6).Split(',').Select(v => v.Trim()).ToArray();
                         if (!numbers.Contains("")) pairs.Add(numbers, person);
                     }
@@ -653,7 +638,6 @@ namespace Geocaching
             CreateMap();
         }
 
-        // TODO: Fix the async Tasks.
         private async void OnSaveToFileClick(object sender, RoutedEventArgs args)
         {
             var dialog = new Microsoft.Win32.SaveFileDialog();
@@ -680,15 +664,15 @@ namespace Geocaching
                     {
                         lines.Add(person.ToString());
 
-                        Geocache[] geocaches = database.Geocache.
+                        List<Geocache> geocaches = database.Geocache.
                             Where(g => g.PersonId == person.PersonId).
-                            OrderByDescending(a => a).ToArray();
+                            OrderByDescending(a => a).ToList();
 
-                        geocaches.ToList().ForEach(g => lines.Add(g.ToString()));
+                        geocaches.ForEach(g => lines.Add(g.ToString()));
 
-                        FoundGeocache[] foundcaches = database.FoundGeocache.
+                        List<FoundGeocache> foundcaches = database.FoundGeocache.
                             Where(f => f.PersonId == person.PersonId).
-                            OrderByDescending(a => a).ToArray();
+                            OrderByDescending(a => a).ToList();
 
                         lines.Add(FoundGeocache.BuildFoundString(foundcaches));
                         lines.Add("");
