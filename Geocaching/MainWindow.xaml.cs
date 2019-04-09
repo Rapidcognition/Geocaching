@@ -187,16 +187,16 @@ namespace Geocaching
 
             MouseDown += (sender, e) =>
             {
+                var point = e.GetPosition(this);
+                latestClickLocation.Latitude = map.ViewportPointToLocation(point).Latitude;
+                latestClickLocation.Longitude = map.ViewportPointToLocation(point).Longitude;
                 try
                 {
                     Geocache ge = (Geocache)sender;
-                    var point = e.GetPosition(this);
-                    latestClickLocation.Latitude = map.ViewportPointToLocation(point).Latitude;
-                    latestClickLocation.Longitude = map.ViewportPointToLocation(point).Longitude;
                 }
                 catch
                 {
-                    if (e.LeftButton == MouseButtonState.Pressed || sender == null)
+                    if (e.LeftButton == MouseButtonState.Pressed)
                     {
                         currentPerson = null;
                         foreach (Pushpin pin in layer.Children)
