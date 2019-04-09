@@ -109,7 +109,7 @@ namespace Geocaching
 
     public class FoundGeocache
     {
-        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int FoundGeocacheId { get; set; }
 
         [ForeignKey("PersonId")]
@@ -256,16 +256,22 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // Bug = "geocache" already has an ID but the database generates it's own id's.
-        private void ClickGreenButton(object sender, MouseButtonEventArgs e)
+        private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
 
-            FoundGeocache foundGeocache = database.FoundGeocache
-                .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+            FoundGeocache foundGeocache = await Task.Run(() =>
+            {
+                return database.FoundGeocache
+                    .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
+            });
+                
 
             database.Remove(foundGeocache);
             database.SaveChanges();
+
+
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
             pin.MouseDown -= ClickGreenButton;
@@ -274,7 +280,7 @@ namespace Geocaching
 
         // TODO: Async operations on Read and Write.
         // Bug = "geocache" already has an ID but the database generates it's own id's.
-        private void ClickRedButton(object sender, MouseButtonEventArgs e)
+        private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
@@ -289,7 +295,7 @@ namespace Geocaching
                 database.Add(foundGeocache);
                 database.SaveChanges();
             });
-            Task.WaitAll(task);
+            await Task.WhenAll(task);
 
             UpdatePin(pin, Colors.Green, 1);
             pin.MouseDown += ClickGreenButton;
@@ -306,12 +312,12 @@ namespace Geocaching
         // DONE maybe ??
         private void PersonClick(object sender, MouseButtonEventArgs e)
         {
+
             Geocache[] geocaches = null;
             var geocachez = Task.Run(() =>
             {
                 geocaches = database.Geocache.Select(a => a).ToArray();
             });
-
             Pushpin pin = (Pushpin)sender;
             Person person = (Person)pin.Tag;
             string tooptipp = pin.ToolTip.ToString();
@@ -503,12 +509,14 @@ namespace Geocaching
             string path = dialog.FileName;
             // Read the selected file here.
 
+            string[] lines = null;
             Task LoadToDatabase = Task.Run(() =>
             {
                 database.Person.RemoveRange(database.Person);
                 database.Geocache.RemoveRange(database.Geocache);
                 database.FoundGeocache.RemoveRange(database.FoundGeocache);
                 database.SaveChanges();
+                lines = File.ReadAllLines(path).ToArray();
             });
 
             List<List<string>> collection = new List<List<string>>();
@@ -522,9 +530,6 @@ namespace Geocaching
             Dictionary<int, Geocache> geopairs = new Dictionary<int, Geocache>();
 
             Task.WaitAll(LoadToDatabase);
-
-            string[] lines = File.ReadAllLines(path).ToArray();
-
             foreach (var line in lines)
             {
                 if(line != "")
