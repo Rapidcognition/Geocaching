@@ -187,24 +187,30 @@ namespace Geocaching
 
             MouseDown += (sender, e) =>
             {
-                var point = e.GetPosition(this);
-                latestClickLocation.Latitude = map.ViewportPointToLocation(point).Latitude;
-                latestClickLocation.Longitude = map.ViewportPointToLocation(point).Longitude;
-
-                if (e.LeftButton == MouseButtonState.Pressed)
+                try
                 {
-                    currentPerson = null;
-                    foreach (Pushpin pin in layer.Children)
+                    Geocache ge = (Geocache)sender;
+                    var point = e.GetPosition(this);
+                    latestClickLocation.Latitude = map.ViewportPointToLocation(point).Latitude;
+                    latestClickLocation.Longitude = map.ViewportPointToLocation(point).Longitude;
+                }
+                catch
+                {
+                    if (e.LeftButton == MouseButtonState.Pressed || sender == null)
                     {
-                        try
+                        currentPerson = null;
+                        foreach (Pushpin pin in layer.Children)
                         {
-                            Geocache geocache = (Geocache)pin.Tag;
-                            UpdatePin(pin, Colors.Gray, 1);
-                        }
-                        catch
-                        {
-                            Person person = (Person)pin.Tag;
-                            UpdatePin(pin, Colors.Blue, 1);
+                            try
+                            {
+                                Geocache geocache = (Geocache)pin.Tag;
+                                UpdatePin(pin, Colors.Gray, 1);
+                            }
+                            catch
+                            {
+                                Person person = (Person)pin.Tag;
+                                UpdatePin(pin, Colors.Blue, 1);
+                            }
                         }
                     }
                 }
@@ -217,6 +223,7 @@ namespace Geocaching
             });
 
             await Task.WhenAll(getPeople);
+
             foreach (Person person in people)
             {
                 geo = new GeoCoordinate();
@@ -244,6 +251,7 @@ namespace Geocaching
                 // Om Click Event exists, then remove. Only click event possible should be ClickGreenButton or ClickRedButton
                 string tooltipp = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
                 var pin = AddPin(geo, tooltipp, Colors.Gray, 1, g);
+                pin.MouseDown += Handled;
                 // koordinater, meddelande, innehåll och vilken person som har placerat den.
             }
 
@@ -261,6 +269,7 @@ namespace Geocaching
         // TODO: Async operations on Read and Write.
         private async void ClickGreenButton(object sender, MouseButtonEventArgs e)
         {
+            e.Handled = true;
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
 
@@ -287,6 +296,8 @@ namespace Geocaching
         // TODO: Async operations on Read and Write.
         private async void ClickRedButton(object sender, MouseButtonEventArgs e)
         {
+            e.Handled = true;
+
             Pushpin pin = (Pushpin)sender;
             Geocache geocache = (Geocache)pin.Tag;
 
@@ -387,7 +398,7 @@ namespace Geocaching
                 e.Handled = true;
             }
         }
-        
+
         // TODO: Async operations on Read and Write.
         // DONE
         private async void OnAddGeocacheClick(object sender, RoutedEventArgs args)
