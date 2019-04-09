@@ -264,8 +264,13 @@ namespace Geocaching
             FoundGeocache foundGeocache = database.FoundGeocache
                 .FirstOrDefault(fg => fg.PersonId == currentPerson.PersonId && fg.GeocacheId == geocache.GeocacheId);
 
-            database.Remove(foundGeocache);
-            database.SaveChanges();
+            var task = Task.Run( () =>
+            {
+                database.Remove(foundGeocache);
+                database.SaveChanges();
+            });
+            Task.WaitAll(task);
+
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
             pin.MouseDown -= ClickGreenButton;
