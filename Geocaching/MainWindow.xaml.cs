@@ -271,7 +271,6 @@ namespace Geocaching
             database.Remove(foundGeocache);
             database.SaveChanges();
 
-
             UpdatePin(pin, Colors.Red, 1);
             pin.MouseDown += ClickRedButton;
             pin.MouseDown -= ClickGreenButton;
@@ -660,10 +659,9 @@ namespace Geocaching
             CreateMap();
         }
 
-        private async void SaveAndExit(object sender, RoutedEventArgs args)
+        private void ExitMap(object sender, RoutedEventArgs args)
         {
-            await database.SaveChangesAsync();
-            MessageBox.Show("All changes are now saved to the database. See you another time!");
+            MessageBox.Show("Thank you for playing, see you another time!");
             Environment.Exit(0);
         }
     }
