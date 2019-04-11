@@ -206,6 +206,22 @@
     <Compile Include="Migrations\20190409100118_Bonk.designer.cs">
       <DependentUpon>20190409100118_Bonk.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\20190411123539_AlmostDone.cs" />
+    <Compile Include="Migrations\20190411123539_AlmostDone.designer.cs">
+      <DependentUpon>20190411123539_AlmostDone.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190411124737_AlmostDone2.cs" />
+    <Compile Include="Migrations\20190411124737_AlmostDone2.designer.cs">
+      <DependentUpon>20190411124737_AlmostDone2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190411130102_AlmostDone4.cs" />
+    <Compile Include="Migrations\20190411130102_AlmostDone4.designer.cs">
+      <DependentUpon>20190411130102_AlmostDone4.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\20190411130534_AlmostDone5.cs" />
+    <Compile Include="Migrations\20190411130534_AlmostDone5.designer.cs">
+      <DependentUpon>20190411130534_AlmostDone5.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\AppDbContextModelSnapshot.cs" />
     <Compile Include="PersonDialog.xaml.cs">
       <DependentUpon>PersonDialog.xaml</DependentUpon>

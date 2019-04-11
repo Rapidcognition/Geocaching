@@ -4,14 +4,16 @@ using Geocaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Geocaching.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190411123539_AlmostDone")]
+    partial class AlmostDone
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,6 +42,10 @@ namespace Geocaching.Migrations
 
                     b.Property<string>("Content")
                         .HasColumnType("varchar(255)");
+
+                    b.Property<double>("Latitude");
+
+                    b.Property<double>("Longitude");
 
                     b.Property<string>("Message")
                         .HasColumnType("varchar(255)");
@@ -70,6 +76,10 @@ namespace Geocaching.Migrations
 
                     b.Property<string>("LastName")
                         .HasColumnType("varchar(50)");
+
+                    b.Property<double>("Latitude");
+
+                    b.Property<double>("Longitude");
 
                     b.Property<string>("StreetName")
                         .HasColumnType("varchar(50)");
@@ -106,11 +116,19 @@ namespace Geocaching.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                            b1.Property<double>("Latitude")
-                                .HasColumnName("Latitude");
+                            b1.Property<double>("Altitude");
 
-                            b1.Property<double>("Longitude")
-                                .HasColumnName("Longitude");
+                            b1.Property<double>("Course");
+
+                            b1.Property<double>("HorizontalAccuracy");
+
+                            b1.Property<double>("Latitude");
+
+                            b1.Property<double>("Longitude");
+
+                            b1.Property<double>("Speed");
+
+                            b1.Property<double>("VerticalAccuracy");
 
                             b1.HasKey("GeocacheId");
 
@@ -131,11 +149,9 @@ namespace Geocaching.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                            b1.Property<double>("Latitude")
-                                .HasColumnName("Latitude");
+                            b1.Property<double>("Latitude");
 
-                            b1.Property<double>("Longitude")
-                                .HasColumnName("Longitude");
+                            b1.Property<double>("Longitude");
 
                             b1.HasKey("PersonId");
 

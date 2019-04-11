@@ -27,6 +27,28 @@ namespace Geocaching
 
         protected override void OnModelCreating(ModelBuilder model)
         {
+            model.Entity<Person>().OwnsOne(p => p.GeoCoordinate)
+                .Ignore(gc => gc.Altitude).Ignore(gc => gc.Course)
+                .Ignore(gc => gc.HorizontalAccuracy).Ignore(gc => gc.IsUnknown)
+                .Ignore(gc => gc.Speed).Ignore(gc => gc.VerticalAccuracy);
+
+            model.Entity<Person>().OwnsOne(p => p.GeoCoordinate, gc => {
+                gc.Property(l => l.Longitude).HasColumnName("Longitude");
+                gc.Property(l => l.Latitude).HasColumnName("Latitude");
+            });
+                
+
+            model.Entity<Geocache>().OwnsOne(g => g.GeoCoordinate)
+                .Ignore(gc => gc.Altitude).Ignore(gc => gc.Course)
+                .Ignore(gc => gc.HorizontalAccuracy).Ignore(gc => gc.IsUnknown)
+                .Ignore(gc => gc.Speed).Ignore(gc => gc.VerticalAccuracy);
+
+            model.Entity<Geocache>().OwnsOne(g => g.GeoCoordinate, gc => {
+                gc.Property(l => l.Longitude).HasColumnName("Longitude");
+                gc.Property(l => l.Latitude).HasColumnName("Latitude");
+            });
+
+
             model.Entity<FoundGeocache>()
                 .HasKey(fg => new { fg.PersonId, fg.GeocacheId });
 
@@ -51,8 +73,7 @@ namespace Geocaching
         public string FirstName { get; set; }
         [Column(TypeName = "varchar(50)")]
         public string LastName { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+
         [Column(TypeName = "varchar(50)")]
         public string Country { get; set; }
         [Column(TypeName = "varchar(50)")]
@@ -61,13 +82,15 @@ namespace Geocaching
         public string StreetName { get; set; }
         public byte StreetNumber { get; set; }
 
+        public GeoCoordinate GeoCoordinate { get; set; }
+
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
 
         public override string ToString()
         {
             string tmp = this.FirstName + " | " + this.LastName + " | " +
                         this.Country + " | " + this.City + " | " + this.StreetName + " | " +
-                        this.StreetNumber + " | " + this.Latitude + " | " + this.Longitude;
+                        this.StreetNumber + " | " + GeoCoordinate.Latitude + " | " + GeoCoordinate.Longitude;
             return tmp;
         }
     }
@@ -77,8 +100,6 @@ namespace Geocaching
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int GeocacheId { get; set; }
 
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
         [Column(TypeName = "varchar(255)")]
         public string Content { get; set; }
         [Column(TypeName = "varchar(255)")]
@@ -86,12 +107,15 @@ namespace Geocaching
 
         public int? PersonId { get; set; }
         public Person Person { get; set; }
+
+        public GeoCoordinate GeoCoordinate { get; set; }
+
         public ICollection<FoundGeocache> FoundGeocaches { get; set; }
 
         public override string ToString()
         {
-            string tmp = this.GeocacheId + " | " + this.Latitude + " | " +
-                            this.Longitude + " | " + this.Content + " | " + this.Message;
+            string tmp = this.GeocacheId + " | " + GeoCoordinate.Latitude.ToString() + " | " +
+                            GeoCoordinate.Longitude.ToString() + " | " + this.Content + " | " + this.Message;
             return tmp;
         }
     }
@@ -193,8 +217,8 @@ namespace Geocaching
             foreach (Person person in people)
             {
                 geo = new GeoCoordinate();
-                geo.Longitude = person.Longitude;
-                geo.Latitude = person.Latitude;
+                geo.Longitude = person.GeoCoordinate.Longitude;
+                geo.Latitude = person.GeoCoordinate.Latitude;
                 string tooptipp = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
                 var pin = AddPin(geo, tooptipp, Colors.Blue, 1, person);
 
@@ -212,9 +236,11 @@ namespace Geocaching
             foreach (Geocache g in geocaches)
             {
                 geo = new GeoCoordinate();
-                geo.Longitude = g.Longitude;
-                geo.Latitude = g.Latitude;
-                string tooltip = g.Latitude + ", " + g.Longitude + "\r" + g.Person.FirstName + " " + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
+                geo.Longitude = g.GeoCoordinate.Longitude;
+                geo.Latitude = g.GeoCoordinate.Latitude;
+                string tooltip = g.GeoCoordinate.Latitude + ", " + g.GeoCoordinate.Longitude + "\r" + g.Person.FirstName + " " 
+                    + g.Person.LastName + " placerade ut denna geocache med " + g.Content + " i. \r \"" + g.Message + "\"";
+
                 var pin = AddPin(geo, tooltip, Colors.Gray, 1, g);
 
                 pin.MouseDown += Handled;
@@ -315,7 +341,7 @@ namespace Geocaching
                 pushpin.MouseDown -= Handled;
 
                 Geocache geocache = geocaches
-                    .FirstOrDefault(g => g.Longitude == pushpin.Location.Longitude && g.Latitude == pushpin.Location.Latitude);
+                    .FirstOrDefault(g => g.GeoCoordinate.Longitude == pushpin.Location.Longitude && g.GeoCoordinate.Latitude == pushpin.Location.Latitude);
 
                 FoundGeocache foundGeocache = null;
                 if (geocache != null)
@@ -367,10 +393,11 @@ namespace Geocaching
                 {
                     Content = contents,
                     Message = message,
-                    Longitude = latestClickLocation.Longitude,
-                    Latitude = latestClickLocation.Latitude,
                     Person = currentPerson,
                 };
+
+                geocache.GeoCoordinate.Latitude = latestClickLocation.Latitude;
+                geocache.GeoCoordinate.Longitude = latestClickLocation.Longitude;
 
                 Task addGeocache = Task.Run(() =>
                 {
@@ -380,10 +407,11 @@ namespace Geocaching
 
                 await Task.WhenAll(addGeocache);
                 geo = new GeoCoordinate();
-                geo.Longitude = geocache.Longitude;
-                geo.Latitude = geocache.Latitude;
+                geo.Longitude = geocache.GeoCoordinate.Longitude;
+                geo.Latitude = geocache.GeoCoordinate.Latitude;
 
-                string tooltip = geocache.Latitude + ", " + geocache.Longitude + "\r" + geocache.Person.FirstName + " " + geocache.Person.LastName + " placerade ut denna geocache med " + geocache.Content + " i. \r \"" + geocache.Message + "\"";
+                string tooltip = geocache.GeoCoordinate.Latitude + ", " + geocache.GeoCoordinate.Longitude + "\r" + geocache.Person.FirstName 
+                    + " " + geocache.Person.LastName + " placerade ut denna geocache med " + geocache.Content + " i. \r \"" + geocache.Message + "\"";
 
                 var pin = AddPin(geo, tooltip, Colors.Black, 1, geocache);
                 pin.MouseDown += Handled;
@@ -416,9 +444,10 @@ namespace Geocaching
                 Country = country,
                 StreetName = streetName,
                 StreetNumber = streetNumber,
-                Longitude = latestClickLocation.Longitude,
-                Latitude = latestClickLocation.Latitude
             };
+
+            person.GeoCoordinate.Longitude = latestClickLocation.Longitude;
+            person.GeoCoordinate.Latitude = latestClickLocation.Latitude;
 
             Task addPerson = Task.Run(() =>
             {
@@ -429,8 +458,8 @@ namespace Geocaching
             await Task.WhenAll(addPerson);
 
             geo = new GeoCoordinate();
-            geo.Longitude = person.Longitude;
-            geo.Latitude = person.Latitude;
+            geo.Longitude = person.GeoCoordinate.Longitude;
+            geo.Latitude = person.GeoCoordinate.Latitude;
 
             string tooptip = person.FirstName + " " + person.LastName + "\r" + person.StreetName + " " + person.StreetNumber + ", " + person.City;
 
@@ -522,8 +551,11 @@ namespace Geocaching
                     City = onePersonsInfo[3],
                     StreetName = onePersonsInfo[4],
                     StreetNumber = byte.Parse(onePersonsInfo[5]),
-                    Latitude = double.Parse(onePersonsInfo[6]),
-                    Longitude = double.Parse(onePersonsInfo[7]),
+                    GeoCoordinate = new GeoCoordinate
+                    {
+                        Latitude = double.Parse(onePersonsInfo[6]),
+                        Longitude = double.Parse(onePersonsInfo[7]),
+                    }
                 };
                 people.Add(person);
 
@@ -534,12 +566,16 @@ namespace Geocaching
                         string[] tmp = collection[i][k].Split('|').Select(v => v.Trim()).ToArray();
                         geocache = new Geocache
                         {
-                            Latitude = double.Parse(tmp[1]),
-                            Longitude = double.Parse(tmp[2]),
                             Content = tmp[3],
                             Message = tmp[4],
                             Person = person,
+                            GeoCoordinate = new GeoCoordinate
+                            {
+                                Latitude = double.Parse(tmp[1]),
+                                Longitude = double.Parse(tmp[2]),
+                            }
                         };
+
                         geoWithTextfileId.Add(int.Parse(tmp[0]), geocache);
                         geocaches.Add(geocache);
 

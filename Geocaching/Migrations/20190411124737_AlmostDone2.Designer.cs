@@ -4,14 +4,16 @@ using Geocaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Geocaching.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190411124737_AlmostDone2")]
+    partial class AlmostDone2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,11 +108,19 @@ namespace Geocaching.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                            b1.Property<double>("Latitude")
-                                .HasColumnName("Latitude");
+                            b1.Property<double>("Altitude");
 
-                            b1.Property<double>("Longitude")
-                                .HasColumnName("Longitude");
+                            b1.Property<double>("Course");
+
+                            b1.Property<double>("HorizontalAccuracy");
+
+                            b1.Property<double>("Latitude");
+
+                            b1.Property<double>("Longitude");
+
+                            b1.Property<double>("Speed");
+
+                            b1.Property<double>("VerticalAccuracy");
 
                             b1.HasKey("GeocacheId");
 
