@@ -396,8 +396,7 @@ namespace Geocaching
                     Person = currentPerson,
                 };
 
-                geocache.GeoCoordinate.Latitude = latestClickLocation.Latitude;
-                geocache.GeoCoordinate.Longitude = latestClickLocation.Longitude;
+                geocache.GeoCoordinate = new GeoCoordinate { Latitude = latestClickLocation.Latitude, Longitude = latestClickLocation.Longitude };
 
                 Task addGeocache = Task.Run(() =>
                 {
@@ -446,8 +445,7 @@ namespace Geocaching
                 StreetNumber = streetNumber,
             };
 
-            person.GeoCoordinate.Longitude = latestClickLocation.Longitude;
-            person.GeoCoordinate.Latitude = latestClickLocation.Latitude;
+            person.GeoCoordinate = new GeoCoordinate { Longitude = latestClickLocation.Longitude, Latitude = latestClickLocation.Latitude };
 
             Task addPerson = Task.Run(() =>
             {
@@ -558,6 +556,7 @@ namespace Geocaching
                     }
                 };
                 people.Add(person);
+                await database.AddAsync(person);
 
                 for (int k = 1; k < collection[i].Count(); k++)
                 {
@@ -581,7 +580,6 @@ namespace Geocaching
 
                         Task AddToDatabase= Task.Run(() =>
                         {
-                            database.Add(person);
                             database.Add(geocache);
                         });
                         await Task.WhenAll(AddToDatabase);
