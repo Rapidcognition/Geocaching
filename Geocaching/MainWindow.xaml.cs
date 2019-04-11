@@ -526,7 +526,6 @@ namespace Geocaching
                     Longitude = double.Parse(onePersonsInfo[7]),
                 };
                 people.Add(person);
-                database.Add(person);
 
                 for (int k = 1; k < collection[i].Count(); k++)
                 {
@@ -542,10 +541,10 @@ namespace Geocaching
                             Person = person,
                         };
                         geoWithTextfileId.Add(int.Parse(tmp[0]), geocache);
+                        geocaches.Add(geocache);
 
                         Task AddToDatabase= Task.Run(() =>
                         {
-                            geocaches.Add(geocache);
                             database.Add(person);
                             database.Add(geocache);
                         });
