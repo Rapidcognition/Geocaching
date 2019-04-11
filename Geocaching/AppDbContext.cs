@@ -7,7 +7,7 @@ using System.Device.Location;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Geocaching.DatabaseContext
+namespace Geocaching
 {
     public class AppDbContext : DbContext
     {

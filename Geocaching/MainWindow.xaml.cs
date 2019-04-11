@@ -10,7 +10,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Device.Location;
-using Geocaching.DatabaseContext;
 
 namespace Geocaching
 {
@@ -19,7 +18,6 @@ namespace Geocaching
         private AppDbContext database = new AppDbContext();
         private const string applicationId = "AlHft3M8psUuZKMImUHduIp_6mnmKRHDIbnRpQr82sfnLC8LS-IZz2vCCF1HTdgi";
         private GeoCoordinate gothenburg = new GeoCoordinate { Latitude = 57.719021, Longitude = 11.991202 };
-        private GeoCoordinate geo;
         private GeoCoordinate latestClickLocation;
         private MapLayer layer;
         private Person currentPerson = null;
@@ -43,8 +41,15 @@ namespace Geocaching
             try { layer.Children.Clear(); }
             catch { }
             map.CredentialsProvider = new ApplicationIdCredentialsProvider(applicationId);
-            map.Center = new Location { Latitude = gothenburg.Latitude, Longitude = gothenburg.Longitude };
-            map.ZoomLevel = 12;
+            if(map.Center.Latitude == 0 || map.Center.Longitude == 0)
+            {
+                map.Center = new Location
+                {
+                    Latitude = gothenburg.Latitude,
+                    Longitude = gothenburg.Longitude
+                };
+                map.ZoomLevel = 12;
+            }
             layer = new MapLayer();
             map.Children.Add(layer);
 
@@ -289,7 +294,8 @@ namespace Geocaching
                 StreetNumber = dialog.AddressStreetNumber,
                 GeoCoordinate = new GeoCoordinate
                 {
-                    Latitude = latestClickLocation.Latitude, Longitude = latestClickLocation.Longitude
+                    Latitude = latestClickLocation.Latitude,
+                    Longitude = latestClickLocation.Longitude
                 },
             };
 
@@ -319,7 +325,7 @@ namespace Geocaching
                 Location = new Location
                 {
                     Latitude = geo.Latitude,
-                    Longitude = geo.Longitude,
+                    Longitude = geo.Longitude
                 },
             };
             ToolTipService.SetToolTip(pin, tooltip);
@@ -397,8 +403,8 @@ namespace Geocaching
                     GeoCoordinate = new GeoCoordinate
                     {
                         Latitude = double.Parse(onePersonsInfo[6]),
-                        Longitude = double.Parse(onePersonsInfo[7]),
-                    }
+                        Longitude = double.Parse(onePersonsInfo[7])
+                    },
                 };
                 people.Add(person);
                 await database.AddAsync(person);
@@ -416,8 +422,8 @@ namespace Geocaching
                             GeoCoordinate = new GeoCoordinate
                             {
                                 Latitude = double.Parse(tmp[1]),
-                                Longitude = double.Parse(tmp[2]),
-                            }
+                                Longitude = double.Parse(tmp[2])
+                            },
                         };
 
                         geoWithTextfileId.Add(int.Parse(tmp[0]), geocache);
